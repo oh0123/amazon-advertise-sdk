@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for ProductMetadataRequestAdType.
@@ -200,8 +201,11 @@ type ProductMetadataParams struct {
 // ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody defines body for ProductMetadata for application/vnd.productmetadatarequest.v1+json ContentType.
 type ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody = ProductMetadataRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -225,6 +229,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -250,6 +261,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -271,36 +286,61 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ProductMetadataWithBody request with any body
-	ProductMetadataWithBody(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProductMetadataWithBody(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBody(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBody(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) ProductMetadataWithBody(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProductMetadataWithBody(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewProductMetadataRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBody(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBody(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewProductMetadataRequestWithApplicationVndProductmetadatarequestV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewProductMetadataRequestWithApplicationVndProductmetadatarequestV1PlusJSONBody calls the generic ProductMetadata builder with application/vnd.productmetadatarequest.v1+json body
@@ -365,13 +405,8 @@ func NewProductMetadataRequestWithBody(server string, params *ProductMetadataPar
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -379,7 +414,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -409,9 +451,9 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ProductMetadataWithBodyWithResponse request with any body
-	ProductMetadataWithBodyWithResponse(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProductMetadataResp, error)
+	ProductMetadataWithBodyWithResponse(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader) (*ProductMetadataResp, error)
 
-	ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ProductMetadataResp, error)
+	ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody) (*ProductMetadataResp, error)
 }
 
 type ProductMetadataResp struct {
@@ -443,16 +485,16 @@ func (r ProductMetadataResp) StatusCode() int {
 }
 
 // ProductMetadataWithBodyWithResponse request with arbitrary body returning *ProductMetadataResp
-func (c *ClientWithResponses) ProductMetadataWithBodyWithResponse(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProductMetadataResp, error) {
-	rsp, err := c.ProductMetadataWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ProductMetadataWithBodyWithResponse(ctx context.Context, params *ProductMetadataParams, contentType string, body io.Reader) (*ProductMetadataResp, error) {
+	rsp, err := c.ProductMetadataWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseProductMetadataResp(rsp)
 }
 
-func (c *ClientWithResponses) ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ProductMetadataResp, error) {
-	rsp, err := c.ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ProductMetadataParams, body ProductMetadataApplicationVndProductmetadatarequestV1PlusJSONRequestBody) (*ProductMetadataResp, error) {
+	rsp, err := c.ProductMetadataWithApplicationVndProductmetadatarequestV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

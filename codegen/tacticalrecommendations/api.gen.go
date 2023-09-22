@@ -11,11 +11,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 // Defines values for AdProduct.
@@ -879,8 +880,11 @@ type ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONReques
 // UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody defines body for UpdateRecommendation for application/vnd.updateRecommendationRequest.v1+json ContentType.
 type UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody = UpdateRecommendationRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -904,6 +908,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -929,6 +940,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -950,94 +965,151 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ApplyRecommendationsWithBody request with any body
-	ApplyRecommendationsWithBody(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ApplyRecommendationsWithBody(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody) (*http.Response, error)
 
 	// ListRecommendationsWithBody request with any body
-	ListRecommendationsWithBody(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRecommendationsWithBody(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateRecommendationWithBody request with any body
-	UpdateRecommendationWithBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateRecommendationWithBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) ApplyRecommendationsWithBody(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ApplyRecommendationsWithBody(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewApplyRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewApplyRecommendationsRequestWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListRecommendationsWithBody(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListRecommendationsWithBody(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBody(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListRecommendationsRequestWithApplicationVndListRecommendationsRequestV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateRecommendationWithBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateRecommendationWithBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateRecommendationRequestWithBody(c.Server, recommendationId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateRecommendationRequestWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(c.Server, recommendationId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewApplyRecommendationsRequestWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody calls the generic ApplyRecommendations builder with application/vnd.applyRecommendationsRequest.v1+json body
@@ -1233,13 +1305,8 @@ func NewUpdateRecommendationRequestWithBody(server string, recommendationId stri
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -1247,7 +1314,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -1277,19 +1351,19 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ApplyRecommendationsWithBodyWithResponse request with any body
-	ApplyRecommendationsWithBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApplyRecommendationsResp, error)
+	ApplyRecommendationsWithBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader) (*ApplyRecommendationsResp, error)
 
-	ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ApplyRecommendationsResp, error)
+	ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody) (*ApplyRecommendationsResp, error)
 
 	// ListRecommendationsWithBodyWithResponse request with any body
-	ListRecommendationsWithBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListRecommendationsResp, error)
+	ListRecommendationsWithBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader) (*ListRecommendationsResp, error)
 
-	ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListRecommendationsResp, error)
+	ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody) (*ListRecommendationsResp, error)
 
 	// UpdateRecommendationWithBodyWithResponse request with any body
-	UpdateRecommendationWithBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRecommendationResp, error)
+	UpdateRecommendationWithBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader) (*UpdateRecommendationResp, error)
 
-	UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRecommendationResp, error)
+	UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody) (*UpdateRecommendationResp, error)
 }
 
 type ApplyRecommendationsResp struct {
@@ -1369,16 +1443,16 @@ func (r UpdateRecommendationResp) StatusCode() int {
 }
 
 // ApplyRecommendationsWithBodyWithResponse request with arbitrary body returning *ApplyRecommendationsResp
-func (c *ClientWithResponses) ApplyRecommendationsWithBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ApplyRecommendationsResp, error) {
-	rsp, err := c.ApplyRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ApplyRecommendationsWithBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, contentType string, body io.Reader) (*ApplyRecommendationsResp, error) {
+	rsp, err := c.ApplyRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseApplyRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ApplyRecommendationsResp, error) {
-	rsp, err := c.ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ApplyRecommendationsParams, body ApplyRecommendationsApplicationVndApplyRecommendationsRequestV1PlusJSONRequestBody) (*ApplyRecommendationsResp, error) {
+	rsp, err := c.ApplyRecommendationsWithApplicationVndApplyRecommendationsRequestV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1386,16 +1460,16 @@ func (c *ClientWithResponses) ApplyRecommendationsWithApplicationVndApplyRecomme
 }
 
 // ListRecommendationsWithBodyWithResponse request with arbitrary body returning *ListRecommendationsResp
-func (c *ClientWithResponses) ListRecommendationsWithBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListRecommendationsResp, error) {
-	rsp, err := c.ListRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListRecommendationsWithBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, contentType string, body io.Reader) (*ListRecommendationsResp, error) {
+	rsp, err := c.ListRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListRecommendationsResp, error) {
-	rsp, err := c.ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBodyWithResponse(ctx context.Context, params *ListRecommendationsParams, body ListRecommendationsApplicationVndListRecommendationsRequestV1PlusJSONRequestBody) (*ListRecommendationsResp, error) {
+	rsp, err := c.ListRecommendationsWithApplicationVndListRecommendationsRequestV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1403,16 +1477,16 @@ func (c *ClientWithResponses) ListRecommendationsWithApplicationVndListRecommend
 }
 
 // UpdateRecommendationWithBodyWithResponse request with arbitrary body returning *UpdateRecommendationResp
-func (c *ClientWithResponses) UpdateRecommendationWithBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRecommendationResp, error) {
-	rsp, err := c.UpdateRecommendationWithBody(ctx, recommendationId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateRecommendationWithBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, contentType string, body io.Reader) (*UpdateRecommendationResp, error) {
+	rsp, err := c.UpdateRecommendationWithBody(ctx, recommendationId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateRecommendationResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRecommendationResp, error) {
-	rsp, err := c.UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(ctx, recommendationId, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBodyWithResponse(ctx context.Context, recommendationId string, params *UpdateRecommendationParams, body UpdateRecommendationApplicationVndUpdateRecommendationRequestV1PlusJSONRequestBody) (*UpdateRecommendationResp, error) {
+	rsp, err := c.UpdateRecommendationWithApplicationVndUpdateRecommendationRequestV1PlusJSONBody(ctx, recommendationId, params, body)
 	if err != nil {
 		return nil, err
 	}

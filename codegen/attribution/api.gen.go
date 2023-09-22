@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for ReportRequestBodyGroupBy.
@@ -28,11 +29,8 @@ type AdvertiserResponse struct {
 	Advertisers *[]Advertiser `json:"advertisers,omitempty"`
 }
 
-// AttributionTagResponse defines model for AttributionTagResponse.
-type AttributionTagResponse struct {
-	// AdvertiserAttributionTagMap A list of advertisers and associated attribution tags.
-	AdvertiserAttributionTagMap *map[string]AttributionTagMap `json:"advertiserAttributionTagMap,omitempty"`
-}
+// AttributionTagResponse A list of advertisers and associated attribution tags.
+type AttributionTagResponse map[string]AttributionTagMap
 
 // MaaSError The error response object.
 type MaaSError struct {
@@ -57,8 +55,8 @@ type Publisher struct {
 
 // PublishersResponse defines model for PublishersResponse.
 type PublishersResponse struct {
-	// Publisher A list of publishers.
-	Publisher *[]Publisher `json:"publisher,omitempty"`
+	// Publishers A list of publishers.
+	Publishers *[]Publisher `json:"publishers,omitempty"`
 }
 
 // ReportEntry Report entry object in GetReport reports list.
@@ -296,8 +294,11 @@ type GetPublisherMacroAttributionTagParams struct {
 // GetAttributionTagsByCampaignJSONRequestBody defines body for GetAttributionTagsByCampaign for application/json ContentType.
 type GetAttributionTagsByCampaignJSONRequestBody = ReportRequestBody
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -321,6 +322,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -346,6 +354,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -367,96 +379,153 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetAdvertisersByProfile request
-	GetAdvertisersByProfile(ctx context.Context, params *GetAdvertisersByProfileParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAdvertisersByProfile(ctx context.Context, params *GetAdvertisersByProfileParams) (*http.Response, error)
 
 	// GetPublishers request
-	GetPublishers(ctx context.Context, params *GetPublishersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetPublishers(ctx context.Context, params *GetPublishersParams) (*http.Response, error)
 
 	// GetAttributionTagsByCampaignWithBody request with any body
-	GetAttributionTagsByCampaignWithBody(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAttributionTagsByCampaignWithBody(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetAttributionTagsByCampaign(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAttributionTagsByCampaign(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody) (*http.Response, error)
 
 	// GetPublisherAttributionTagTemplate request
-	GetPublisherAttributionTagTemplate(ctx context.Context, params *GetPublisherAttributionTagTemplateParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetPublisherAttributionTagTemplate(ctx context.Context, params *GetPublisherAttributionTagTemplateParams) (*http.Response, error)
 
 	// GetPublisherMacroAttributionTag request
-	GetPublisherMacroAttributionTag(ctx context.Context, params *GetPublisherMacroAttributionTagParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetPublisherMacroAttributionTag(ctx context.Context, params *GetPublisherMacroAttributionTagParams) (*http.Response, error)
 }
 
-func (c *Client) GetAdvertisersByProfile(ctx context.Context, params *GetAdvertisersByProfileParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAdvertisersByProfile(ctx context.Context, params *GetAdvertisersByProfileParams) (*http.Response, error) {
 	req, err := NewGetAdvertisersByProfileRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetPublishers(ctx context.Context, params *GetPublishersParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetPublishers(ctx context.Context, params *GetPublishersParams) (*http.Response, error) {
 	req, err := NewGetPublishersRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetAttributionTagsByCampaignWithBody(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAttributionTagsByCampaignWithBody(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetAttributionTagsByCampaignRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetAttributionTagsByCampaign(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAttributionTagsByCampaign(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetAttributionTagsByCampaignRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetPublisherAttributionTagTemplate(ctx context.Context, params *GetPublisherAttributionTagTemplateParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetPublisherAttributionTagTemplate(ctx context.Context, params *GetPublisherAttributionTagTemplateParams) (*http.Response, error) {
 	req, err := NewGetPublisherAttributionTagTemplateRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetPublisherMacroAttributionTag(ctx context.Context, params *GetPublisherMacroAttributionTagParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetPublisherMacroAttributionTag(ctx context.Context, params *GetPublisherMacroAttributionTagParams) (*http.Response, error) {
 	req, err := NewGetPublisherMacroAttributionTagRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGetAdvertisersByProfileRequest generates requests for GetAdvertisersByProfile
@@ -647,9 +716,11 @@ func NewGetPublisherAttributionTagTemplateRequest(server string, params *GetPubl
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -661,9 +732,11 @@ func NewGetPublisherAttributionTagTemplateRequest(server string, params *GetPubl
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -730,9 +803,11 @@ func NewGetPublisherMacroAttributionTagRequest(server string, params *GetPublish
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -744,9 +819,11 @@ func NewGetPublisherMacroAttributionTagRequest(server string, params *GetPublish
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -785,13 +862,8 @@ func NewGetPublisherMacroAttributionTagRequest(server string, params *GetPublish
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -799,7 +871,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -829,21 +908,21 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetAdvertisersByProfileWithResponse request
-	GetAdvertisersByProfileWithResponse(ctx context.Context, params *GetAdvertisersByProfileParams, reqEditors ...RequestEditorFn) (*GetAdvertisersByProfileResp, error)
+	GetAdvertisersByProfileWithResponse(ctx context.Context, params *GetAdvertisersByProfileParams) (*GetAdvertisersByProfileResp, error)
 
 	// GetPublishersWithResponse request
-	GetPublishersWithResponse(ctx context.Context, params *GetPublishersParams, reqEditors ...RequestEditorFn) (*GetPublishersResp, error)
+	GetPublishersWithResponse(ctx context.Context, params *GetPublishersParams) (*GetPublishersResp, error)
 
 	// GetAttributionTagsByCampaignWithBodyWithResponse request with any body
-	GetAttributionTagsByCampaignWithBodyWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetAttributionTagsByCampaignResp, error)
+	GetAttributionTagsByCampaignWithBodyWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader) (*GetAttributionTagsByCampaignResp, error)
 
-	GetAttributionTagsByCampaignWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody, reqEditors ...RequestEditorFn) (*GetAttributionTagsByCampaignResp, error)
+	GetAttributionTagsByCampaignWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody) (*GetAttributionTagsByCampaignResp, error)
 
 	// GetPublisherAttributionTagTemplateWithResponse request
-	GetPublisherAttributionTagTemplateWithResponse(ctx context.Context, params *GetPublisherAttributionTagTemplateParams, reqEditors ...RequestEditorFn) (*GetPublisherAttributionTagTemplateResp, error)
+	GetPublisherAttributionTagTemplateWithResponse(ctx context.Context, params *GetPublisherAttributionTagTemplateParams) (*GetPublisherAttributionTagTemplateResp, error)
 
 	// GetPublisherMacroAttributionTagWithResponse request
-	GetPublisherMacroAttributionTagWithResponse(ctx context.Context, params *GetPublisherMacroAttributionTagParams, reqEditors ...RequestEditorFn) (*GetPublisherMacroAttributionTagResp, error)
+	GetPublisherMacroAttributionTagWithResponse(ctx context.Context, params *GetPublisherMacroAttributionTagParams) (*GetPublisherMacroAttributionTagResp, error)
 }
 
 type GetAdvertisersByProfileResp struct {
@@ -970,8 +1049,8 @@ func (r GetPublisherMacroAttributionTagResp) StatusCode() int {
 }
 
 // GetAdvertisersByProfileWithResponse request returning *GetAdvertisersByProfileResp
-func (c *ClientWithResponses) GetAdvertisersByProfileWithResponse(ctx context.Context, params *GetAdvertisersByProfileParams, reqEditors ...RequestEditorFn) (*GetAdvertisersByProfileResp, error) {
-	rsp, err := c.GetAdvertisersByProfile(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetAdvertisersByProfileWithResponse(ctx context.Context, params *GetAdvertisersByProfileParams) (*GetAdvertisersByProfileResp, error) {
+	rsp, err := c.GetAdvertisersByProfile(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -979,8 +1058,8 @@ func (c *ClientWithResponses) GetAdvertisersByProfileWithResponse(ctx context.Co
 }
 
 // GetPublishersWithResponse request returning *GetPublishersResp
-func (c *ClientWithResponses) GetPublishersWithResponse(ctx context.Context, params *GetPublishersParams, reqEditors ...RequestEditorFn) (*GetPublishersResp, error) {
-	rsp, err := c.GetPublishers(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetPublishersWithResponse(ctx context.Context, params *GetPublishersParams) (*GetPublishersResp, error) {
+	rsp, err := c.GetPublishers(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -988,16 +1067,16 @@ func (c *ClientWithResponses) GetPublishersWithResponse(ctx context.Context, par
 }
 
 // GetAttributionTagsByCampaignWithBodyWithResponse request with arbitrary body returning *GetAttributionTagsByCampaignResp
-func (c *ClientWithResponses) GetAttributionTagsByCampaignWithBodyWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetAttributionTagsByCampaignResp, error) {
-	rsp, err := c.GetAttributionTagsByCampaignWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetAttributionTagsByCampaignWithBodyWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, contentType string, body io.Reader) (*GetAttributionTagsByCampaignResp, error) {
+	rsp, err := c.GetAttributionTagsByCampaignWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetAttributionTagsByCampaignResp(rsp)
 }
 
-func (c *ClientWithResponses) GetAttributionTagsByCampaignWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody, reqEditors ...RequestEditorFn) (*GetAttributionTagsByCampaignResp, error) {
-	rsp, err := c.GetAttributionTagsByCampaign(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetAttributionTagsByCampaignWithResponse(ctx context.Context, params *GetAttributionTagsByCampaignParams, body GetAttributionTagsByCampaignJSONRequestBody) (*GetAttributionTagsByCampaignResp, error) {
+	rsp, err := c.GetAttributionTagsByCampaign(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1005,8 +1084,8 @@ func (c *ClientWithResponses) GetAttributionTagsByCampaignWithResponse(ctx conte
 }
 
 // GetPublisherAttributionTagTemplateWithResponse request returning *GetPublisherAttributionTagTemplateResp
-func (c *ClientWithResponses) GetPublisherAttributionTagTemplateWithResponse(ctx context.Context, params *GetPublisherAttributionTagTemplateParams, reqEditors ...RequestEditorFn) (*GetPublisherAttributionTagTemplateResp, error) {
-	rsp, err := c.GetPublisherAttributionTagTemplate(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetPublisherAttributionTagTemplateWithResponse(ctx context.Context, params *GetPublisherAttributionTagTemplateParams) (*GetPublisherAttributionTagTemplateResp, error) {
+	rsp, err := c.GetPublisherAttributionTagTemplate(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1014,8 +1093,8 @@ func (c *ClientWithResponses) GetPublisherAttributionTagTemplateWithResponse(ctx
 }
 
 // GetPublisherMacroAttributionTagWithResponse request returning *GetPublisherMacroAttributionTagResp
-func (c *ClientWithResponses) GetPublisherMacroAttributionTagWithResponse(ctx context.Context, params *GetPublisherMacroAttributionTagParams, reqEditors ...RequestEditorFn) (*GetPublisherMacroAttributionTagResp, error) {
-	rsp, err := c.GetPublisherMacroAttributionTag(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetPublisherMacroAttributionTagWithResponse(ctx context.Context, params *GetPublisherMacroAttributionTagParams) (*GetPublisherMacroAttributionTagResp, error) {
+	rsp, err := c.GetPublisherMacroAttributionTag(ctx, params)
 	if err != nil {
 		return nil, err
 	}

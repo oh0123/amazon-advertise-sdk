@@ -11,11 +11,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 // Defines values for AdGroupThemeBasedBidRecommendationRequestRecommendationType.
@@ -7193,8 +7194,11 @@ type GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBod
 // GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody defines body for GetProductRecommendations for application/vnd.spproductrecommendation.v3+json ContentType.
 type GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody = GetProductRecommendationsRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -7218,6 +7222,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -7243,6 +7254,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -7264,1752 +7279,2721 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// CreateSponsoredProductsAdGroupsWithBody request with any body
-	CreateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsAdGroupsWithBody request with any body
-	UpdateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsAdGroupsWithBody request with any body
-	DeleteSponsoredProductsAdGroupsWithBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsAdGroupsWithBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsAdGroupsWithBody request with any body
-	ListSponsoredProductsAdGroupsWithBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsAdGroupsWithBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetSPBudgetRulesForAdvertiser request
-	GetSPBudgetRulesForAdvertiser(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSPBudgetRulesForAdvertiser(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams) (*http.Response, error)
 
 	// CreateBudgetRulesForSPCampaignsWithBody request with any body
-	CreateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateBudgetRulesForSPCampaigns(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateBudgetRulesForSPCampaigns(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody) (*http.Response, error)
 
 	// UpdateBudgetRulesForSPCampaignsWithBody request with any body
-	UpdateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateBudgetRulesForSPCampaigns(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateBudgetRulesForSPCampaigns(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody) (*http.Response, error)
 
 	// GetBudgetRuleByRuleIdForSPCampaigns request
-	GetBudgetRuleByRuleIdForSPCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBudgetRuleByRuleIdForSPCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams) (*http.Response, error)
 
 	// GetCampaignsAssociatedWithSPBudgetRule request
-	GetCampaignsAssociatedWithSPBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCampaignsAssociatedWithSPBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams) (*http.Response, error)
 
 	// GetCampaignRecommendations request
-	GetCampaignRecommendations(ctx context.Context, params *GetCampaignRecommendationsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCampaignRecommendations(ctx context.Context, params *GetCampaignRecommendationsParams) (*http.Response, error)
 
 	// CreateSponsoredProductsCampaignNegativeKeywordsWithBody request with any body
-	CreateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsCampaignNegativeKeywordsWithBody request with any body
-	UpdateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsCampaignNegativeKeywordsWithBody request with any body
-	DeleteSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsCampaignNegativeKeywordsWithBody request with any body
-	ListSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody request with any body
-	CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody request with any body
-	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody request with any body
-	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsCampaignNegativeTargetingClausesWithBody request with any body
-	ListSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateSponsoredProductsCampaignsWithBody request with any body
-	CreateSponsoredProductsCampaignsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsCampaignsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsCampaignsWithBody request with any body
-	UpdateSponsoredProductsCampaignsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsCampaignsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error)
 
 	// SpCampaignsBudgetUsageWithBody request with any body
-	SpCampaignsBudgetUsageWithBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SpCampaignsBudgetUsageWithBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetBudgetRecommendationsWithBody request with any body
-	GetBudgetRecommendationsWithBody(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBudgetRecommendationsWithBody(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody) (*http.Response, error)
 
 	// SPGetBudgetRulesRecommendationWithBody request with any body
-	SPGetBudgetRulesRecommendationWithBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SPGetBudgetRulesRecommendationWithBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsCampaignsWithBody request with any body
-	DeleteSponsoredProductsCampaignsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsCampaignsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetBudgetRecommendationWithBody request with any body
-	GetBudgetRecommendationWithBody(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBudgetRecommendationWithBody(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsCampaignsWithBody request with any body
-	ListSponsoredProductsCampaignsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsCampaignsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListAssociatedBudgetRulesForSPCampaigns request
-	ListAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams) (*http.Response, error)
 
 	// CreateAssociatedBudgetRulesForSPCampaignsWithBody request with any body
-	CreateAssociatedBudgetRulesForSPCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAssociatedBudgetRulesForSPCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody) (*http.Response, error)
 
 	// GetRuleBasedBudgetHistoryForSPCampaigns request
-	GetRuleBasedBudgetHistoryForSPCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRuleBasedBudgetHistoryForSPCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams) (*http.Response, error)
 
 	// DisassociateAssociatedBudgetRuleForSPCampaigns request
-	DisassociateAssociatedBudgetRuleForSPCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DisassociateAssociatedBudgetRuleForSPCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams) (*http.Response, error)
 
 	// CreateSponsoredProductsKeywordsWithBody request with any body
-	CreateSponsoredProductsKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsKeywordsWithBody request with any body
-	UpdateSponsoredProductsKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsKeywordsWithBody request with any body
-	DeleteSponsoredProductsKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsKeywordsWithBody request with any body
-	ListSponsoredProductsKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateSponsoredProductsNegativeKeywordsWithBody request with any body
-	CreateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsNegativeKeywordsWithBody request with any body
-	UpdateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsNegativeKeywordsWithBody request with any body
-	DeleteSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsNegativeKeywordsWithBody request with any body
-	ListSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateSponsoredProductsNegativeTargetingClausesWithBody request with any body
-	CreateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsNegativeTargetingClausesWithBody request with any body
-	UpdateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetNegativeBrands request
-	GetNegativeBrands(ctx context.Context, params *GetNegativeBrandsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetNegativeBrands(ctx context.Context, params *GetNegativeBrandsParams) (*http.Response, error)
 
 	// SearchBrandsWithBody request with any body
-	SearchBrandsWithBody(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchBrandsWithBody(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsNegativeTargetingClausesWithBody request with any body
-	DeleteSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsNegativeTargetingClausesWithBody request with any body
-	ListSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateSponsoredProductsProductAdsWithBody request with any body
-	CreateSponsoredProductsProductAdsWithBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsProductAdsWithBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsProductAdsWithBody request with any body
-	UpdateSponsoredProductsProductAdsWithBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsProductAdsWithBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteSponsoredProductsProductAdsWithBody request with any body
-	DeleteSponsoredProductsProductAdsWithBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsProductAdsWithBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsProductAdsWithBody request with any body
-	ListSponsoredProductsProductAdsWithBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsProductAdsWithBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateOptimizationRuleWithBody request with any body
-	CreateOptimizationRuleWithBody(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateOptimizationRuleWithBody(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateOptimizationRuleWithBody request with any body
-	UpdateOptimizationRuleWithBody(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateOptimizationRuleWithBody(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetOptimizationRuleEligibilityWithBody request with any body
-	GetOptimizationRuleEligibilityWithBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetOptimizationRuleEligibilityWithBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetRuleNotificationWithBody request with any body
-	GetRuleNotificationWithBody(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRuleNotificationWithBody(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteCampaignOptimizationRule request
-	DeleteCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams) (*http.Response, error)
 
 	// GetCampaignOptimizationRule request
-	GetCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams) (*http.Response, error)
 
 	// CreateSponsoredProductsTargetingClausesWithBody request with any body
-	CreateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSponsoredProductsTargetingClausesWithBody request with any body
-	UpdateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetThemeBasedBidRecommendationForAdGroupV1WithBody request with any body
-	GetThemeBasedBidRecommendationForAdGroupV1WithBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetThemeBasedBidRecommendationForAdGroupV1WithBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader) (*http.Response, error)
 
-	GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetTargetableCategories request
-	GetTargetableCategories(ctx context.Context, params *GetTargetableCategoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetableCategories(ctx context.Context, params *GetTargetableCategoriesParams) (*http.Response, error)
 
 	// GetCategoryRecommendationsForASINsWithBody request with any body
-	GetCategoryRecommendationsForASINsWithBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCategoryRecommendationsForASINsWithBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetRefinementsForCategory request
-	GetRefinementsForCategory(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRefinementsForCategory(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams) (*http.Response, error)
 
 	// DeleteSponsoredProductsTargetingClausesWithBody request with any body
-	DeleteSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetRankedKeywordRecommendationWithBody request with any body
-	GetRankedKeywordRecommendationWithBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRankedKeywordRecommendationWithBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody) (*http.Response, error)
 
-	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody) (*http.Response, error)
 
-	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody) (*http.Response, error)
 
 	// ListSponsoredProductsTargetingClausesWithBody request with any body
-	ListSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetTargetableASINCountsWithBody request with any body
-	GetTargetableASINCountsWithBody(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetableASINCountsWithBody(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetProductRecommendationsWithBody request with any body
-	GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) CreateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsAdGroupsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsAdGroupsRequestWithApplicationVndSpAdGroupV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsAdGroupsWithBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsAdGroupsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsAdGroupsRequestWithApplicationVndSpAdGroupV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsAdGroupsWithBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsAdGroupsWithBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsAdGroupsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsAdGroupsRequestWithApplicationVndSpAdGroupV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsAdGroupsWithBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsAdGroupsWithBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsAdGroupsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsAdGroupsRequestWithApplicationVndSpAdGroupV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSPBudgetRulesForAdvertiser(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSPBudgetRulesForAdvertiser(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams) (*http.Response, error) {
 	req, err := NewGetSPBudgetRulesForAdvertiserRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateBudgetRulesForSPCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateBudgetRulesForSPCampaigns(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateBudgetRulesForSPCampaigns(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateBudgetRulesForSPCampaignsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateBudgetRulesForSPCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateBudgetRulesForSPCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateBudgetRulesForSPCampaigns(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateBudgetRulesForSPCampaigns(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateBudgetRulesForSPCampaignsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBudgetRuleByRuleIdForSPCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBudgetRuleByRuleIdForSPCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams) (*http.Response, error) {
 	req, err := NewGetBudgetRuleByRuleIdForSPCampaignsRequest(c.Server, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCampaignsAssociatedWithSPBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCampaignsAssociatedWithSPBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams) (*http.Response, error) {
 	req, err := NewGetCampaignsAssociatedWithSPBudgetRuleRequest(c.Server, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCampaignRecommendations(ctx context.Context, params *GetCampaignRecommendationsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCampaignRecommendations(ctx context.Context, params *GetCampaignRecommendationsParams) (*http.Response, error) {
 	req, err := NewGetCampaignRecommendationsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsCampaignNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsCampaignNegativeKeywordsRequestWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsCampaignNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsCampaignNegativeKeywordsRequestWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsCampaignNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsCampaignNegativeKeywordsRequestWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsCampaignNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsCampaignNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsCampaignNegativeKeywordsRequestWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsCampaignNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsCampaignNegativeTargetingClausesRequestWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsCampaignNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsCampaignNegativeTargetingClausesRequestWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsCampaignNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsCampaignNegativeTargetingClausesRequestWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsCampaignNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsCampaignNegativeTargetingClausesRequestWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsCampaignsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsCampaignsWithBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsCampaignsRequestWithApplicationVndSpCampaignV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsCampaignsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsCampaignsWithBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsCampaignsRequestWithApplicationVndSpCampaignV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SpCampaignsBudgetUsageWithBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SpCampaignsBudgetUsageWithBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSpCampaignsBudgetUsageRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSpCampaignsBudgetUsageRequestWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBudgetRecommendationsWithBody(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBudgetRecommendationsWithBody(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetBudgetRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetBudgetRecommendationsRequestWithApplicationVndBudgetrecommendationV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SPGetBudgetRulesRecommendationWithBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SPGetBudgetRulesRecommendationWithBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSPGetBudgetRulesRecommendationRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSPGetBudgetRulesRecommendationRequestWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsCampaignsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsCampaignsWithBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsCampaignsRequestWithApplicationVndSpCampaignV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBudgetRecommendationWithBody(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBudgetRecommendationWithBody(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetBudgetRecommendationRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetBudgetRecommendationRequestWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsCampaignsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsCampaignsWithBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsCampaignsRequestWithApplicationVndSpCampaignV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams) (*http.Response, error) {
 	req, err := NewListAssociatedBudgetRulesForSPCampaignsRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAssociatedBudgetRulesForSPCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAssociatedBudgetRulesForSPCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateAssociatedBudgetRulesForSPCampaignsRequestWithBody(c.Server, campaignId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAssociatedBudgetRulesForSPCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateAssociatedBudgetRulesForSPCampaignsRequest(c.Server, campaignId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRuleBasedBudgetHistoryForSPCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRuleBasedBudgetHistoryForSPCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams) (*http.Response, error) {
 	req, err := NewGetRuleBasedBudgetHistoryForSPCampaignsRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DisassociateAssociatedBudgetRuleForSPCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DisassociateAssociatedBudgetRuleForSPCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams) (*http.Response, error) {
 	req, err := NewDisassociateAssociatedBudgetRuleForSPCampaignsRequest(c.Server, campaignId, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsKeywordsRequestWithApplicationVndSpKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsKeywordsRequestWithApplicationVndSpKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsKeywordsRequestWithApplicationVndSpKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsKeywordsRequestWithApplicationVndSpKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsNegativeKeywordsRequestWithApplicationVndSpNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsNegativeKeywordsRequestWithApplicationVndSpNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsNegativeKeywordsRequestWithApplicationVndSpNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsNegativeKeywordsWithBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsNegativeKeywordsRequestWithApplicationVndSpNegativeKeywordV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsNegativeTargetingClausesRequestWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsNegativeTargetingClausesRequestWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetNegativeBrands(ctx context.Context, params *GetNegativeBrandsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetNegativeBrands(ctx context.Context, params *GetNegativeBrandsParams) (*http.Response, error) {
 	req, err := NewGetNegativeBrandsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SearchBrandsWithBody(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SearchBrandsWithBody(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSearchBrandsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSearchBrandsRequestWithApplicationVndSpproducttargetingV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsNegativeTargetingClausesRequestWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsNegativeTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsNegativeTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsNegativeTargetingClausesRequestWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsProductAdsWithBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsProductAdsWithBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsProductAdsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsProductAdsRequestWithApplicationVndSpProductAdV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsProductAdsWithBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsProductAdsWithBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsProductAdsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsProductAdsRequestWithApplicationVndSpProductAdV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsProductAdsWithBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsProductAdsWithBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsProductAdsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsProductAdsRequestWithApplicationVndSpProductAdV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsProductAdsWithBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsProductAdsWithBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsProductAdsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsProductAdsRequestWithApplicationVndSpProductAdV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateOptimizationRuleWithBody(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateOptimizationRuleWithBody(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateOptimizationRuleRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateOptimizationRuleRequestWithApplicationVndOptimizationrulesV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateOptimizationRuleWithBody(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateOptimizationRuleWithBody(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateOptimizationRuleRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateOptimizationRuleRequestWithApplicationVndOptimizationrulesV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetOptimizationRuleEligibilityWithBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetOptimizationRuleEligibilityWithBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetOptimizationRuleEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetOptimizationRuleEligibilityRequestWithApplicationVndOptimizationrulesV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRuleNotificationWithBody(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRuleNotificationWithBody(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetRuleNotificationRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetRuleNotificationRequestWithApplicationVndOptimizationrulesV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams) (*http.Response, error) {
 	req, err := NewDeleteCampaignOptimizationRuleRequest(c.Server, campaignOptimizationId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCampaignOptimizationRule(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams) (*http.Response, error) {
 	req, err := NewGetCampaignOptimizationRuleRequest(c.Server, campaignOptimizationId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSponsoredProductsTargetingClausesRequestWithApplicationVndSpTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSponsoredProductsTargetingClausesRequestWithApplicationVndSpTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetThemeBasedBidRecommendationForAdGroupV1WithBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetThemeBasedBidRecommendationForAdGroupV1WithBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetThemeBasedBidRecommendationForAdGroupV1RequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetThemeBasedBidRecommendationForAdGroupV1RequestWithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetableCategories(ctx context.Context, params *GetTargetableCategoriesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetableCategories(ctx context.Context, params *GetTargetableCategoriesParams) (*http.Response, error) {
 	req, err := NewGetTargetableCategoriesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCategoryRecommendationsForASINsWithBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCategoryRecommendationsForASINsWithBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetCategoryRecommendationsForASINsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetCategoryRecommendationsForASINsRequestWithApplicationVndSpproducttargetingV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRefinementsForCategory(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRefinementsForCategory(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams) (*http.Response, error) {
 	req, err := NewGetRefinementsForCategoryRequest(c.Server, categoryId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewDeleteSponsoredProductsTargetingClausesRequestWithApplicationVndSpTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRankedKeywordRecommendationWithBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRankedKeywordRecommendationWithBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetRankedKeywordRecommendationRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetRankedKeywordRecommendationRequestWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetRankedKeywordRecommendationRequestWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetRankedKeywordRecommendationRequestWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsTargetingClausesWithBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListSponsoredProductsTargetingClausesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewListSponsoredProductsTargetingClausesRequestWithApplicationVndSpTargetingClauseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetableASINCountsWithBody(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetableASINCountsWithBody(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetTargetableASINCountsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetableASINCountsRequestWithApplicationVndSpproducttargetingV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetProductRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetProductRecommendationsRequestWithApplicationVndSpproductrecommendationV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewCreateSponsoredProductsAdGroupsRequestWithApplicationVndSpAdGroupV3PlusJSONBody calls the generic CreateSponsoredProductsAdGroups builder with application/vnd.spAdGroup.v3+json body
@@ -9312,9 +10296,11 @@ func NewGetSPBudgetRulesForAdvertiserRequest(server string, params *GetSPBudgetR
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -9326,9 +10312,11 @@ func NewGetSPBudgetRulesForAdvertiserRequest(server string, params *GetSPBudgetR
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -9582,9 +10570,11 @@ func NewGetCampaignsAssociatedWithSPBudgetRuleRequest(server string, budgetRuleI
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -9596,9 +10586,11 @@ func NewGetCampaignsAssociatedWithSPBudgetRuleRequest(server string, budgetRuleI
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -9665,9 +10657,11 @@ func NewGetCampaignRecommendationsRequest(server string, params *GetCampaignReco
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -9681,9 +10675,11 @@ func NewGetCampaignRecommendationsRequest(server string, params *GetCampaignReco
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -10942,9 +11938,11 @@ func NewGetRuleBasedBudgetHistoryForSPCampaignsRequest(server string, campaignId
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -10956,9 +11954,11 @@ func NewGetRuleBasedBudgetHistoryForSPCampaignsRequest(server string, campaignId
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -10968,9 +11968,11 @@ func NewGetRuleBasedBudgetHistoryForSPCampaignsRequest(server string, campaignId
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -10980,9 +11982,11 @@ func NewGetRuleBasedBudgetHistoryForSPCampaignsRequest(server string, campaignId
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -12893,9 +13897,11 @@ func NewGetTargetableCategoriesRequest(server string, params *GetTargetableCateg
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12986,9 +13992,11 @@ func NewGetCategoryRecommendationsForASINsRequestWithBody(server string, params 
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13077,9 +14085,11 @@ func NewGetRefinementsForCategoryRequest(server string, categoryId string, param
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13505,13 +14515,8 @@ func NewGetProductRecommendationsRequestWithBody(server string, params *GetProdu
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -13519,7 +14524,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -13549,309 +14561,309 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// CreateSponsoredProductsAdGroupsWithBodyWithResponse request with any body
-	CreateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsAdGroupsResp, error)
+	CreateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*CreateSponsoredProductsAdGroupsResp, error)
 
-	CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsAdGroupsResp, error)
+	CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*CreateSponsoredProductsAdGroupsResp, error)
 
 	// UpdateSponsoredProductsAdGroupsWithBodyWithResponse request with any body
-	UpdateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsAdGroupsResp, error)
+	UpdateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsAdGroupsResp, error)
 
-	UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsAdGroupsResp, error)
+	UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*UpdateSponsoredProductsAdGroupsResp, error)
 
 	// DeleteSponsoredProductsAdGroupsWithBodyWithResponse request with any body
-	DeleteSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsAdGroupsResp, error)
+	DeleteSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsAdGroupsResp, error)
 
-	DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsAdGroupsResp, error)
+	DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*DeleteSponsoredProductsAdGroupsResp, error)
 
 	// ListSponsoredProductsAdGroupsWithBodyWithResponse request with any body
-	ListSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsAdGroupsResp, error)
+	ListSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*ListSponsoredProductsAdGroupsResp, error)
 
-	ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsAdGroupsResp, error)
+	ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*ListSponsoredProductsAdGroupsResp, error)
 
 	// GetSPBudgetRulesForAdvertiserWithResponse request
-	GetSPBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*GetSPBudgetRulesForAdvertiserResp, error)
+	GetSPBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams) (*GetSPBudgetRulesForAdvertiserResp, error)
 
 	// CreateBudgetRulesForSPCampaignsWithBodyWithResponse request with any body
-	CreateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSPCampaignsResp, error)
+	CreateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*CreateBudgetRulesForSPCampaignsResp, error)
 
-	CreateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSPCampaignsResp, error)
+	CreateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody) (*CreateBudgetRulesForSPCampaignsResp, error)
 
 	// UpdateBudgetRulesForSPCampaignsWithBodyWithResponse request with any body
-	UpdateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSPCampaignsResp, error)
+	UpdateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*UpdateBudgetRulesForSPCampaignsResp, error)
 
-	UpdateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSPCampaignsResp, error)
+	UpdateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody) (*UpdateBudgetRulesForSPCampaignsResp, error)
 
 	// GetBudgetRuleByRuleIdForSPCampaignsWithResponse request
-	GetBudgetRuleByRuleIdForSPCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams, reqEditors ...RequestEditorFn) (*GetBudgetRuleByRuleIdForSPCampaignsResp, error)
+	GetBudgetRuleByRuleIdForSPCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams) (*GetBudgetRuleByRuleIdForSPCampaignsResp, error)
 
 	// GetCampaignsAssociatedWithSPBudgetRuleWithResponse request
-	GetCampaignsAssociatedWithSPBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams, reqEditors ...RequestEditorFn) (*GetCampaignsAssociatedWithSPBudgetRuleResp, error)
+	GetCampaignsAssociatedWithSPBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams) (*GetCampaignsAssociatedWithSPBudgetRuleResp, error)
 
 	// GetCampaignRecommendationsWithResponse request
-	GetCampaignRecommendationsWithResponse(ctx context.Context, params *GetCampaignRecommendationsParams, reqEditors ...RequestEditorFn) (*GetCampaignRecommendationsResp, error)
+	GetCampaignRecommendationsWithResponse(ctx context.Context, params *GetCampaignRecommendationsParams) (*GetCampaignRecommendationsResp, error)
 
 	// CreateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with any body
-	CreateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error)
+	CreateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error)
 
-	CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error)
+	CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error)
 
 	// UpdateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with any body
-	UpdateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error)
+	UpdateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error)
 
-	UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error)
+	UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error)
 
 	// DeleteSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with any body
-	DeleteSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error)
+	DeleteSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error)
 
-	DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error)
+	DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error)
 
 	// ListSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with any body
-	ListSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error)
+	ListSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error)
 
-	ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error)
+	ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error)
 
 	// CreateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with any body
-	CreateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	CreateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
-	CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
 	// UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with any body
-	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
-	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
 	// DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with any body
-	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
-	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
 	// ListSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with any body
-	ListSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	ListSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
-	ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error)
+	ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error)
 
 	// CreateSponsoredProductsCampaignsWithBodyWithResponse request with any body
-	CreateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignsResp, error)
+	CreateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*CreateSponsoredProductsCampaignsResp, error)
 
-	CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignsResp, error)
+	CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*CreateSponsoredProductsCampaignsResp, error)
 
 	// UpdateSponsoredProductsCampaignsWithBodyWithResponse request with any body
-	UpdateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignsResp, error)
+	UpdateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsCampaignsResp, error)
 
-	UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignsResp, error)
+	UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*UpdateSponsoredProductsCampaignsResp, error)
 
 	// SpCampaignsBudgetUsageWithBodyWithResponse request with any body
-	SpCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SpCampaignsBudgetUsageResp, error)
+	SpCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader) (*SpCampaignsBudgetUsageResp, error)
 
-	SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SpCampaignsBudgetUsageResp, error)
+	SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody) (*SpCampaignsBudgetUsageResp, error)
 
 	// GetBudgetRecommendationsWithBodyWithResponse request with any body
-	GetBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationsResp, error)
+	GetBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader) (*GetBudgetRecommendationsResp, error)
 
-	GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationsResp, error)
+	GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody) (*GetBudgetRecommendationsResp, error)
 
 	// SPGetBudgetRulesRecommendationWithBodyWithResponse request with any body
-	SPGetBudgetRulesRecommendationWithBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SPGetBudgetRulesRecommendationResp, error)
+	SPGetBudgetRulesRecommendationWithBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader) (*SPGetBudgetRulesRecommendationResp, error)
 
-	SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SPGetBudgetRulesRecommendationResp, error)
+	SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody) (*SPGetBudgetRulesRecommendationResp, error)
 
 	// DeleteSponsoredProductsCampaignsWithBodyWithResponse request with any body
-	DeleteSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignsResp, error)
+	DeleteSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsCampaignsResp, error)
 
-	DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignsResp, error)
+	DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*DeleteSponsoredProductsCampaignsResp, error)
 
 	// GetBudgetRecommendationWithBodyWithResponse request with any body
-	GetBudgetRecommendationWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationResp, error)
+	GetBudgetRecommendationWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader) (*GetBudgetRecommendationResp, error)
 
-	GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationResp, error)
+	GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody) (*GetBudgetRecommendationResp, error)
 
 	// ListSponsoredProductsCampaignsWithBodyWithResponse request with any body
-	ListSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignsResp, error)
+	ListSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*ListSponsoredProductsCampaignsResp, error)
 
-	ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignsResp, error)
+	ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*ListSponsoredProductsCampaignsResp, error)
 
 	// ListAssociatedBudgetRulesForSPCampaignsWithResponse request
-	ListAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams, reqEditors ...RequestEditorFn) (*ListAssociatedBudgetRulesForSPCampaignsResp, error)
+	ListAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams) (*ListAssociatedBudgetRulesForSPCampaignsResp, error)
 
 	// CreateAssociatedBudgetRulesForSPCampaignsWithBodyWithResponse request with any body
-	CreateAssociatedBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error)
+	CreateAssociatedBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error)
 
-	CreateAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error)
+	CreateAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error)
 
 	// GetRuleBasedBudgetHistoryForSPCampaignsWithResponse request
-	GetRuleBasedBudgetHistoryForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams, reqEditors ...RequestEditorFn) (*GetRuleBasedBudgetHistoryForSPCampaignsResp, error)
+	GetRuleBasedBudgetHistoryForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams) (*GetRuleBasedBudgetHistoryForSPCampaignsResp, error)
 
 	// DisassociateAssociatedBudgetRuleForSPCampaignsWithResponse request
-	DisassociateAssociatedBudgetRuleForSPCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams, reqEditors ...RequestEditorFn) (*DisassociateAssociatedBudgetRuleForSPCampaignsResp, error)
+	DisassociateAssociatedBudgetRuleForSPCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams) (*DisassociateAssociatedBudgetRuleForSPCampaignsResp, error)
 
 	// CreateSponsoredProductsKeywordsWithBodyWithResponse request with any body
-	CreateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsKeywordsResp, error)
+	CreateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*CreateSponsoredProductsKeywordsResp, error)
 
-	CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsKeywordsResp, error)
+	CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*CreateSponsoredProductsKeywordsResp, error)
 
 	// UpdateSponsoredProductsKeywordsWithBodyWithResponse request with any body
-	UpdateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsKeywordsResp, error)
+	UpdateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsKeywordsResp, error)
 
-	UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsKeywordsResp, error)
+	UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*UpdateSponsoredProductsKeywordsResp, error)
 
 	// DeleteSponsoredProductsKeywordsWithBodyWithResponse request with any body
-	DeleteSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsKeywordsResp, error)
+	DeleteSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsKeywordsResp, error)
 
-	DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsKeywordsResp, error)
+	DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*DeleteSponsoredProductsKeywordsResp, error)
 
 	// ListSponsoredProductsKeywordsWithBodyWithResponse request with any body
-	ListSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsKeywordsResp, error)
+	ListSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*ListSponsoredProductsKeywordsResp, error)
 
-	ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsKeywordsResp, error)
+	ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*ListSponsoredProductsKeywordsResp, error)
 
 	// CreateSponsoredProductsNegativeKeywordsWithBodyWithResponse request with any body
-	CreateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeKeywordsResp, error)
+	CreateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*CreateSponsoredProductsNegativeKeywordsResp, error)
 
-	CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeKeywordsResp, error)
+	CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*CreateSponsoredProductsNegativeKeywordsResp, error)
 
 	// UpdateSponsoredProductsNegativeKeywordsWithBodyWithResponse request with any body
-	UpdateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeKeywordsResp, error)
+	UpdateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsNegativeKeywordsResp, error)
 
-	UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeKeywordsResp, error)
+	UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*UpdateSponsoredProductsNegativeKeywordsResp, error)
 
 	// DeleteSponsoredProductsNegativeKeywordsWithBodyWithResponse request with any body
-	DeleteSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeKeywordsResp, error)
+	DeleteSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsNegativeKeywordsResp, error)
 
-	DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeKeywordsResp, error)
+	DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*DeleteSponsoredProductsNegativeKeywordsResp, error)
 
 	// ListSponsoredProductsNegativeKeywordsWithBodyWithResponse request with any body
-	ListSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeKeywordsResp, error)
+	ListSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*ListSponsoredProductsNegativeKeywordsResp, error)
 
-	ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeKeywordsResp, error)
+	ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*ListSponsoredProductsNegativeKeywordsResp, error)
 
 	// CreateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with any body
-	CreateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeTargetingClausesResp, error)
+	CreateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*CreateSponsoredProductsNegativeTargetingClausesResp, error)
 
-	CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeTargetingClausesResp, error)
+	CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*CreateSponsoredProductsNegativeTargetingClausesResp, error)
 
 	// UpdateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with any body
-	UpdateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error)
+	UpdateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error)
 
-	UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error)
+	UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error)
 
 	// GetNegativeBrandsWithResponse request
-	GetNegativeBrandsWithResponse(ctx context.Context, params *GetNegativeBrandsParams, reqEditors ...RequestEditorFn) (*GetNegativeBrandsResp, error)
+	GetNegativeBrandsWithResponse(ctx context.Context, params *GetNegativeBrandsParams) (*GetNegativeBrandsResp, error)
 
 	// SearchBrandsWithBodyWithResponse request with any body
-	SearchBrandsWithBodyWithResponse(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchBrandsResp, error)
+	SearchBrandsWithBodyWithResponse(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader) (*SearchBrandsResp, error)
 
-	SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchBrandsResp, error)
+	SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*SearchBrandsResp, error)
 
 	// DeleteSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with any body
-	DeleteSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error)
+	DeleteSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error)
 
-	DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error)
+	DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error)
 
 	// ListSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with any body
-	ListSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeTargetingClausesResp, error)
+	ListSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*ListSponsoredProductsNegativeTargetingClausesResp, error)
 
-	ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeTargetingClausesResp, error)
+	ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*ListSponsoredProductsNegativeTargetingClausesResp, error)
 
 	// CreateSponsoredProductsProductAdsWithBodyWithResponse request with any body
-	CreateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsProductAdsResp, error)
+	CreateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*CreateSponsoredProductsProductAdsResp, error)
 
-	CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsProductAdsResp, error)
+	CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*CreateSponsoredProductsProductAdsResp, error)
 
 	// UpdateSponsoredProductsProductAdsWithBodyWithResponse request with any body
-	UpdateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsProductAdsResp, error)
+	UpdateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsProductAdsResp, error)
 
-	UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsProductAdsResp, error)
+	UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*UpdateSponsoredProductsProductAdsResp, error)
 
 	// DeleteSponsoredProductsProductAdsWithBodyWithResponse request with any body
-	DeleteSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsProductAdsResp, error)
+	DeleteSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsProductAdsResp, error)
 
-	DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsProductAdsResp, error)
+	DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*DeleteSponsoredProductsProductAdsResp, error)
 
 	// ListSponsoredProductsProductAdsWithBodyWithResponse request with any body
-	ListSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsProductAdsResp, error)
+	ListSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*ListSponsoredProductsProductAdsResp, error)
 
-	ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsProductAdsResp, error)
+	ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*ListSponsoredProductsProductAdsResp, error)
 
 	// CreateOptimizationRuleWithBodyWithResponse request with any body
-	CreateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOptimizationRuleResp, error)
+	CreateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader) (*CreateOptimizationRuleResp, error)
 
-	CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOptimizationRuleResp, error)
+	CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*CreateOptimizationRuleResp, error)
 
 	// UpdateOptimizationRuleWithBodyWithResponse request with any body
-	UpdateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOptimizationRuleResp, error)
+	UpdateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader) (*UpdateOptimizationRuleResp, error)
 
-	UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOptimizationRuleResp, error)
+	UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*UpdateOptimizationRuleResp, error)
 
 	// GetOptimizationRuleEligibilityWithBodyWithResponse request with any body
-	GetOptimizationRuleEligibilityWithBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetOptimizationRuleEligibilityResp, error)
+	GetOptimizationRuleEligibilityWithBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader) (*GetOptimizationRuleEligibilityResp, error)
 
-	GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetOptimizationRuleEligibilityResp, error)
+	GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*GetOptimizationRuleEligibilityResp, error)
 
 	// GetRuleNotificationWithBodyWithResponse request with any body
-	GetRuleNotificationWithBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetRuleNotificationResp, error)
+	GetRuleNotificationWithBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader) (*GetRuleNotificationResp, error)
 
-	GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRuleNotificationResp, error)
+	GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*GetRuleNotificationResp, error)
 
 	// DeleteCampaignOptimizationRuleWithResponse request
-	DeleteCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*DeleteCampaignOptimizationRuleResp, error)
+	DeleteCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams) (*DeleteCampaignOptimizationRuleResp, error)
 
 	// GetCampaignOptimizationRuleWithResponse request
-	GetCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*GetCampaignOptimizationRuleResp, error)
+	GetCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams) (*GetCampaignOptimizationRuleResp, error)
 
 	// CreateSponsoredProductsTargetingClausesWithBodyWithResponse request with any body
-	CreateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsTargetingClausesResp, error)
+	CreateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*CreateSponsoredProductsTargetingClausesResp, error)
 
-	CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsTargetingClausesResp, error)
+	CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*CreateSponsoredProductsTargetingClausesResp, error)
 
 	// UpdateSponsoredProductsTargetingClausesWithBodyWithResponse request with any body
-	UpdateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsTargetingClausesResp, error)
+	UpdateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*UpdateSponsoredProductsTargetingClausesResp, error)
 
-	UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsTargetingClausesResp, error)
+	UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*UpdateSponsoredProductsTargetingClausesResp, error)
 
 	// GetThemeBasedBidRecommendationForAdGroupV1WithBodyWithResponse request with any body
-	GetThemeBasedBidRecommendationForAdGroupV1WithBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error)
+	GetThemeBasedBidRecommendationForAdGroupV1WithBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error)
 
-	GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error)
+	GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error)
 
 	// GetTargetableCategoriesWithResponse request
-	GetTargetableCategoriesWithResponse(ctx context.Context, params *GetTargetableCategoriesParams, reqEditors ...RequestEditorFn) (*GetTargetableCategoriesResp, error)
+	GetTargetableCategoriesWithResponse(ctx context.Context, params *GetTargetableCategoriesParams) (*GetTargetableCategoriesResp, error)
 
 	// GetCategoryRecommendationsForASINsWithBodyWithResponse request with any body
-	GetCategoryRecommendationsForASINsWithBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetCategoryRecommendationsForASINsResp, error)
+	GetCategoryRecommendationsForASINsWithBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader) (*GetCategoryRecommendationsForASINsResp, error)
 
-	GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetCategoryRecommendationsForASINsResp, error)
+	GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*GetCategoryRecommendationsForASINsResp, error)
 
 	// GetRefinementsForCategoryWithResponse request
-	GetRefinementsForCategoryWithResponse(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams, reqEditors ...RequestEditorFn) (*GetRefinementsForCategoryResp, error)
+	GetRefinementsForCategoryWithResponse(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams) (*GetRefinementsForCategoryResp, error)
 
 	// DeleteSponsoredProductsTargetingClausesWithBodyWithResponse request with any body
-	DeleteSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsTargetingClausesResp, error)
+	DeleteSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*DeleteSponsoredProductsTargetingClausesResp, error)
 
-	DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsTargetingClausesResp, error)
+	DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*DeleteSponsoredProductsTargetingClausesResp, error)
 
 	// GetRankedKeywordRecommendationWithBodyWithResponse request with any body
-	GetRankedKeywordRecommendationWithBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error)
+	GetRankedKeywordRecommendationWithBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader) (*GetRankedKeywordRecommendationResp, error)
 
-	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error)
+	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody) (*GetRankedKeywordRecommendationResp, error)
 
-	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error)
+	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody) (*GetRankedKeywordRecommendationResp, error)
 
-	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error)
+	GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody) (*GetRankedKeywordRecommendationResp, error)
 
 	// ListSponsoredProductsTargetingClausesWithBodyWithResponse request with any body
-	ListSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsTargetingClausesResp, error)
+	ListSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*ListSponsoredProductsTargetingClausesResp, error)
 
-	ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsTargetingClausesResp, error)
+	ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*ListSponsoredProductsTargetingClausesResp, error)
 
 	// GetTargetableASINCountsWithBodyWithResponse request with any body
-	GetTargetableASINCountsWithBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetableASINCountsResp, error)
+	GetTargetableASINCountsWithBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader) (*GetTargetableASINCountsResp, error)
 
-	GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetableASINCountsResp, error)
+	GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*GetTargetableASINCountsResp, error)
 
 	// GetProductRecommendationsWithBodyWithResponse request with any body
-	GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error)
+	GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*GetProductRecommendationsResp, error)
 
-	GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error)
+	GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody) (*GetProductRecommendationsResp, error)
 }
 
 type CreateSponsoredProductsAdGroupsResp struct {
@@ -15679,16 +16691,16 @@ func (r GetProductRecommendationsResp) StatusCode() int {
 }
 
 // CreateSponsoredProductsAdGroupsWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsAdGroupsResp
-func (c *ClientWithResponses) CreateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.CreateSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*CreateSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.CreateSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsAdGroupsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsAdGroupsParams, body CreateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*CreateSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.CreateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15696,16 +16708,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsAdGroupsWithApplicationVndS
 }
 
 // UpdateSponsoredProductsAdGroupsWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsAdGroupsResp
-func (c *ClientWithResponses) UpdateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsAdGroupsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsAdGroupsParams, body UpdateSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*UpdateSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15713,16 +16725,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsAdGroupsWithApplicationVndS
 }
 
 // DeleteSponsoredProductsAdGroupsWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsAdGroupsResp
-func (c *ClientWithResponses) DeleteSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsAdGroupsResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsAdGroupsParams, body DeleteSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*DeleteSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15730,16 +16742,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsAdGroupsWithApplicationVndS
 }
 
 // ListSponsoredProductsAdGroupsWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsAdGroupsResp
-func (c *ClientWithResponses) ListSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.ListSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsAdGroupsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, contentType string, body io.Reader) (*ListSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.ListSponsoredProductsAdGroupsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsAdGroupsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsAdGroupsResp, error) {
-	rsp, err := c.ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsAdGroupsParams, body ListSponsoredProductsAdGroupsApplicationVndSpAdGroupV3PlusJSONRequestBody) (*ListSponsoredProductsAdGroupsResp, error) {
+	rsp, err := c.ListSponsoredProductsAdGroupsWithApplicationVndSpAdGroupV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15747,8 +16759,8 @@ func (c *ClientWithResponses) ListSponsoredProductsAdGroupsWithApplicationVndSpA
 }
 
 // GetSPBudgetRulesForAdvertiserWithResponse request returning *GetSPBudgetRulesForAdvertiserResp
-func (c *ClientWithResponses) GetSPBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*GetSPBudgetRulesForAdvertiserResp, error) {
-	rsp, err := c.GetSPBudgetRulesForAdvertiser(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetSPBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSPBudgetRulesForAdvertiserParams) (*GetSPBudgetRulesForAdvertiserResp, error) {
+	rsp, err := c.GetSPBudgetRulesForAdvertiser(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15756,16 +16768,16 @@ func (c *ClientWithResponses) GetSPBudgetRulesForAdvertiserWithResponse(ctx cont
 }
 
 // CreateBudgetRulesForSPCampaignsWithBodyWithResponse request with arbitrary body returning *CreateBudgetRulesForSPCampaignsResp
-func (c *ClientWithResponses) CreateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.CreateBudgetRulesForSPCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*CreateBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.CreateBudgetRulesForSPCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateBudgetRulesForSPCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.CreateBudgetRulesForSPCampaigns(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSPCampaignsParams, body CreateBudgetRulesForSPCampaignsJSONRequestBody) (*CreateBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.CreateBudgetRulesForSPCampaigns(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15773,16 +16785,16 @@ func (c *ClientWithResponses) CreateBudgetRulesForSPCampaignsWithResponse(ctx co
 }
 
 // UpdateBudgetRulesForSPCampaignsWithBodyWithResponse request with arbitrary body returning *UpdateBudgetRulesForSPCampaignsResp
-func (c *ClientWithResponses) UpdateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.UpdateBudgetRulesForSPCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*UpdateBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.UpdateBudgetRulesForSPCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateBudgetRulesForSPCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.UpdateBudgetRulesForSPCampaigns(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateBudgetRulesForSPCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSPCampaignsParams, body UpdateBudgetRulesForSPCampaignsJSONRequestBody) (*UpdateBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.UpdateBudgetRulesForSPCampaigns(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15790,8 +16802,8 @@ func (c *ClientWithResponses) UpdateBudgetRulesForSPCampaignsWithResponse(ctx co
 }
 
 // GetBudgetRuleByRuleIdForSPCampaignsWithResponse request returning *GetBudgetRuleByRuleIdForSPCampaignsResp
-func (c *ClientWithResponses) GetBudgetRuleByRuleIdForSPCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams, reqEditors ...RequestEditorFn) (*GetBudgetRuleByRuleIdForSPCampaignsResp, error) {
-	rsp, err := c.GetBudgetRuleByRuleIdForSPCampaigns(ctx, budgetRuleId, params, reqEditors...)
+func (c *ClientWithResponses) GetBudgetRuleByRuleIdForSPCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSPCampaignsParams) (*GetBudgetRuleByRuleIdForSPCampaignsResp, error) {
+	rsp, err := c.GetBudgetRuleByRuleIdForSPCampaigns(ctx, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15799,8 +16811,8 @@ func (c *ClientWithResponses) GetBudgetRuleByRuleIdForSPCampaignsWithResponse(ct
 }
 
 // GetCampaignsAssociatedWithSPBudgetRuleWithResponse request returning *GetCampaignsAssociatedWithSPBudgetRuleResp
-func (c *ClientWithResponses) GetCampaignsAssociatedWithSPBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams, reqEditors ...RequestEditorFn) (*GetCampaignsAssociatedWithSPBudgetRuleResp, error) {
-	rsp, err := c.GetCampaignsAssociatedWithSPBudgetRule(ctx, budgetRuleId, params, reqEditors...)
+func (c *ClientWithResponses) GetCampaignsAssociatedWithSPBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSPBudgetRuleParams) (*GetCampaignsAssociatedWithSPBudgetRuleResp, error) {
+	rsp, err := c.GetCampaignsAssociatedWithSPBudgetRule(ctx, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15808,8 +16820,8 @@ func (c *ClientWithResponses) GetCampaignsAssociatedWithSPBudgetRuleWithResponse
 }
 
 // GetCampaignRecommendationsWithResponse request returning *GetCampaignRecommendationsResp
-func (c *ClientWithResponses) GetCampaignRecommendationsWithResponse(ctx context.Context, params *GetCampaignRecommendationsParams, reqEditors ...RequestEditorFn) (*GetCampaignRecommendationsResp, error) {
-	rsp, err := c.GetCampaignRecommendations(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetCampaignRecommendationsWithResponse(ctx context.Context, params *GetCampaignRecommendationsParams) (*GetCampaignRecommendationsResp, error) {
+	rsp, err := c.GetCampaignRecommendations(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -15817,16 +16829,16 @@ func (c *ClientWithResponses) GetCampaignRecommendationsWithResponse(ctx context
 }
 
 // CreateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsCampaignNegativeKeywordsResp
-func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.CreateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.CreateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsCampaignNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeKeywordsParams, body CreateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*CreateSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.CreateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15834,16 +16846,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeKeywordsWit
 }
 
 // UpdateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsCampaignNegativeKeywordsResp
-func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsCampaignNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeKeywordsParams, body UpdateSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*UpdateSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15851,16 +16863,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeKeywordsWit
 }
 
 // DeleteSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsCampaignNegativeKeywordsResp
-func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsCampaignNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeKeywordsParams, body DeleteSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*DeleteSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15868,16 +16880,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeKeywordsWit
 }
 
 // ListSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsCampaignNegativeKeywordsResp
-func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.ListSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, contentType string, body io.Reader) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.ListSponsoredProductsCampaignNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsCampaignNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error) {
-	rsp, err := c.ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeKeywordsParams, body ListSponsoredProductsCampaignNegativeKeywordsApplicationVndSpCampaignNegativeKeywordV3PlusJSONRequestBody) (*ListSponsoredProductsCampaignNegativeKeywordsResp, error) {
+	rsp, err := c.ListSponsoredProductsCampaignNegativeKeywordsWithApplicationVndSpCampaignNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15885,16 +16897,16 @@ func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeKeywordsWithA
 }
 
 // CreateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsCampaignNegativeTargetingClausesResp
-func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.CreateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsCampaignNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignNegativeTargetingClausesParams, body CreateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*CreateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.CreateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15902,16 +16914,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsCampaignNegativeTargetingCl
 }
 
 // UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsCampaignNegativeTargetingClausesResp
-func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.UpdateSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsCampaignNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignNegativeTargetingClausesParams, body UpdateSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*UpdateSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.UpdateSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15919,16 +16931,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsCampaignNegativeTargetingCl
 }
 
 // DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsCampaignNegativeTargetingClausesResp
-func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.DeleteSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsCampaignNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignNegativeTargetingClausesParams, body DeleteSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*DeleteSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.DeleteSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15936,16 +16948,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsCampaignNegativeTargetingCl
 }
 
 // ListSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsCampaignNegativeTargetingClausesResp
-func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.ListSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, contentType string, body io.Reader) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.ListSponsoredProductsCampaignNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsCampaignNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
-	rsp, err := c.ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignNegativeTargetingClausesParams, body ListSponsoredProductsCampaignNegativeTargetingClausesApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONRequestBody) (*ListSponsoredProductsCampaignNegativeTargetingClausesResp, error) {
+	rsp, err := c.ListSponsoredProductsCampaignNegativeTargetingClausesWithApplicationVndSpCampaignNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15953,16 +16965,16 @@ func (c *ClientWithResponses) ListSponsoredProductsCampaignNegativeTargetingClau
 }
 
 // CreateSponsoredProductsCampaignsWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsCampaignsResp
-func (c *ClientWithResponses) CreateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.CreateSponsoredProductsCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*CreateSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.CreateSponsoredProductsCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsCampaignsParams, body CreateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*CreateSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.CreateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15970,16 +16982,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsCampaignsWithApplicationVnd
 }
 
 // UpdateSponsoredProductsCampaignsWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsCampaignsResp
-func (c *ClientWithResponses) UpdateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsCampaignsParams, body UpdateSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*UpdateSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -15987,16 +16999,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsCampaignsWithApplicationVnd
 }
 
 // SpCampaignsBudgetUsageWithBodyWithResponse request with arbitrary body returning *SpCampaignsBudgetUsageResp
-func (c *ClientWithResponses) SpCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SpCampaignsBudgetUsageResp, error) {
-	rsp, err := c.SpCampaignsBudgetUsageWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SpCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, contentType string, body io.Reader) (*SpCampaignsBudgetUsageResp, error) {
+	rsp, err := c.SpCampaignsBudgetUsageWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSpCampaignsBudgetUsageResp(rsp)
 }
 
-func (c *ClientWithResponses) SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SpCampaignsBudgetUsageResp, error) {
-	rsp, err := c.SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SpCampaignsBudgetUsageParams, body SpCampaignsBudgetUsageApplicationVndSpcampaignbudgetusageV1PlusJSONRequestBody) (*SpCampaignsBudgetUsageResp, error) {
+	rsp, err := c.SpCampaignsBudgetUsageWithApplicationVndSpcampaignbudgetusageV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16004,16 +17016,16 @@ func (c *ClientWithResponses) SpCampaignsBudgetUsageWithApplicationVndSpcampaign
 }
 
 // GetBudgetRecommendationsWithBodyWithResponse request with arbitrary body returning *GetBudgetRecommendationsResp
-func (c *ClientWithResponses) GetBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationsResp, error) {
-	rsp, err := c.GetBudgetRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, contentType string, body io.Reader) (*GetBudgetRecommendationsResp, error) {
+	rsp, err := c.GetBudgetRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetBudgetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationsResp, error) {
-	rsp, err := c.GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationsParams, body GetBudgetRecommendationsApplicationVndBudgetrecommendationV3PlusJSONRequestBody) (*GetBudgetRecommendationsResp, error) {
+	rsp, err := c.GetBudgetRecommendationsWithApplicationVndBudgetrecommendationV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16021,16 +17033,16 @@ func (c *ClientWithResponses) GetBudgetRecommendationsWithApplicationVndBudgetre
 }
 
 // SPGetBudgetRulesRecommendationWithBodyWithResponse request with arbitrary body returning *SPGetBudgetRulesRecommendationResp
-func (c *ClientWithResponses) SPGetBudgetRulesRecommendationWithBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SPGetBudgetRulesRecommendationResp, error) {
-	rsp, err := c.SPGetBudgetRulesRecommendationWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SPGetBudgetRulesRecommendationWithBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, contentType string, body io.Reader) (*SPGetBudgetRulesRecommendationResp, error) {
+	rsp, err := c.SPGetBudgetRulesRecommendationWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSPGetBudgetRulesRecommendationResp(rsp)
 }
 
-func (c *ClientWithResponses) SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SPGetBudgetRulesRecommendationResp, error) {
-	rsp, err := c.SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *SPGetBudgetRulesRecommendationParams, body SPGetBudgetRulesRecommendationApplicationVndSpbudgetrulesrecommendationV3PlusJSONRequestBody) (*SPGetBudgetRulesRecommendationResp, error) {
+	rsp, err := c.SPGetBudgetRulesRecommendationWithApplicationVndSpbudgetrulesrecommendationV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16038,16 +17050,16 @@ func (c *ClientWithResponses) SPGetBudgetRulesRecommendationWithApplicationVndSp
 }
 
 // DeleteSponsoredProductsCampaignsWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsCampaignsResp
-func (c *ClientWithResponses) DeleteSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsCampaignsParams, body DeleteSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*DeleteSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16055,16 +17067,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsCampaignsWithApplicationVnd
 }
 
 // GetBudgetRecommendationWithBodyWithResponse request with arbitrary body returning *GetBudgetRecommendationResp
-func (c *ClientWithResponses) GetBudgetRecommendationWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationResp, error) {
-	rsp, err := c.GetBudgetRecommendationWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetBudgetRecommendationWithBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, contentType string, body io.Reader) (*GetBudgetRecommendationResp, error) {
+	rsp, err := c.GetBudgetRecommendationWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetBudgetRecommendationResp(rsp)
 }
 
-func (c *ClientWithResponses) GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBudgetRecommendationResp, error) {
-	rsp, err := c.GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBodyWithResponse(ctx context.Context, params *GetBudgetRecommendationParams, body GetBudgetRecommendationApplicationVndSpinitialbudgetrecommendationV34PlusJSONRequestBody) (*GetBudgetRecommendationResp, error) {
+	rsp, err := c.GetBudgetRecommendationWithApplicationVndSpinitialbudgetrecommendationV34PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16072,16 +17084,16 @@ func (c *ClientWithResponses) GetBudgetRecommendationWithApplicationVndSpinitial
 }
 
 // ListSponsoredProductsCampaignsWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsCampaignsResp
-func (c *ClientWithResponses) ListSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.ListSponsoredProductsCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsCampaignsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, contentType string, body io.Reader) (*ListSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.ListSponsoredProductsCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsCampaignsResp, error) {
-	rsp, err := c.ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsCampaignsParams, body ListSponsoredProductsCampaignsApplicationVndSpCampaignV3PlusJSONRequestBody) (*ListSponsoredProductsCampaignsResp, error) {
+	rsp, err := c.ListSponsoredProductsCampaignsWithApplicationVndSpCampaignV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16089,8 +17101,8 @@ func (c *ClientWithResponses) ListSponsoredProductsCampaignsWithApplicationVndSp
 }
 
 // ListAssociatedBudgetRulesForSPCampaignsWithResponse request returning *ListAssociatedBudgetRulesForSPCampaignsResp
-func (c *ClientWithResponses) ListAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams, reqEditors ...RequestEditorFn) (*ListAssociatedBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.ListAssociatedBudgetRulesForSPCampaigns(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) ListAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSPCampaignsParams) (*ListAssociatedBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.ListAssociatedBudgetRulesForSPCampaigns(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16098,16 +17110,16 @@ func (c *ClientWithResponses) ListAssociatedBudgetRulesForSPCampaignsWithRespons
 }
 
 // CreateAssociatedBudgetRulesForSPCampaignsWithBodyWithResponse request with arbitrary body returning *CreateAssociatedBudgetRulesForSPCampaignsResp
-func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.CreateAssociatedBudgetRulesForSPCampaignsWithBody(ctx, campaignId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSPCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, contentType string, body io.Reader) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.CreateAssociatedBudgetRulesForSPCampaignsWithBody(ctx, campaignId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateAssociatedBudgetRulesForSPCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error) {
-	rsp, err := c.CreateAssociatedBudgetRulesForSPCampaigns(ctx, campaignId, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSPCampaignsParams, body CreateAssociatedBudgetRulesForSPCampaignsJSONRequestBody) (*CreateAssociatedBudgetRulesForSPCampaignsResp, error) {
+	rsp, err := c.CreateAssociatedBudgetRulesForSPCampaigns(ctx, campaignId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16115,8 +17127,8 @@ func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSPCampaignsWithRespo
 }
 
 // GetRuleBasedBudgetHistoryForSPCampaignsWithResponse request returning *GetRuleBasedBudgetHistoryForSPCampaignsResp
-func (c *ClientWithResponses) GetRuleBasedBudgetHistoryForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams, reqEditors ...RequestEditorFn) (*GetRuleBasedBudgetHistoryForSPCampaignsResp, error) {
-	rsp, err := c.GetRuleBasedBudgetHistoryForSPCampaigns(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) GetRuleBasedBudgetHistoryForSPCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSPCampaignsParams) (*GetRuleBasedBudgetHistoryForSPCampaignsResp, error) {
+	rsp, err := c.GetRuleBasedBudgetHistoryForSPCampaigns(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16124,8 +17136,8 @@ func (c *ClientWithResponses) GetRuleBasedBudgetHistoryForSPCampaignsWithRespons
 }
 
 // DisassociateAssociatedBudgetRuleForSPCampaignsWithResponse request returning *DisassociateAssociatedBudgetRuleForSPCampaignsResp
-func (c *ClientWithResponses) DisassociateAssociatedBudgetRuleForSPCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams, reqEditors ...RequestEditorFn) (*DisassociateAssociatedBudgetRuleForSPCampaignsResp, error) {
-	rsp, err := c.DisassociateAssociatedBudgetRuleForSPCampaigns(ctx, campaignId, budgetRuleId, params, reqEditors...)
+func (c *ClientWithResponses) DisassociateAssociatedBudgetRuleForSPCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSPCampaignsParams) (*DisassociateAssociatedBudgetRuleForSPCampaignsResp, error) {
+	rsp, err := c.DisassociateAssociatedBudgetRuleForSPCampaigns(ctx, campaignId, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16133,16 +17145,16 @@ func (c *ClientWithResponses) DisassociateAssociatedBudgetRuleForSPCampaignsWith
 }
 
 // CreateSponsoredProductsKeywordsWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsKeywordsResp
-func (c *ClientWithResponses) CreateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.CreateSponsoredProductsKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*CreateSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.CreateSponsoredProductsKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsKeywordsParams, body CreateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*CreateSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.CreateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16150,16 +17162,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsKeywordsWithApplicationVndS
 }
 
 // UpdateSponsoredProductsKeywordsWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsKeywordsResp
-func (c *ClientWithResponses) UpdateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsKeywordsParams, body UpdateSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*UpdateSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16167,16 +17179,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsKeywordsWithApplicationVndS
 }
 
 // DeleteSponsoredProductsKeywordsWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsKeywordsResp
-func (c *ClientWithResponses) DeleteSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsKeywordsParams, body DeleteSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*DeleteSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16184,16 +17196,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsKeywordsWithApplicationVndS
 }
 
 // ListSponsoredProductsKeywordsWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsKeywordsResp
-func (c *ClientWithResponses) ListSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.ListSponsoredProductsKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, contentType string, body io.Reader) (*ListSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.ListSponsoredProductsKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsKeywordsResp, error) {
-	rsp, err := c.ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsKeywordsParams, body ListSponsoredProductsKeywordsApplicationVndSpKeywordV3PlusJSONRequestBody) (*ListSponsoredProductsKeywordsResp, error) {
+	rsp, err := c.ListSponsoredProductsKeywordsWithApplicationVndSpKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16201,16 +17213,16 @@ func (c *ClientWithResponses) ListSponsoredProductsKeywordsWithApplicationVndSpK
 }
 
 // CreateSponsoredProductsNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsNegativeKeywordsResp
-func (c *ClientWithResponses) CreateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.CreateSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*CreateSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.CreateSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeKeywordsParams, body CreateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*CreateSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.CreateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16218,16 +17230,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsNegativeKeywordsWithApplica
 }
 
 // UpdateSponsoredProductsNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsNegativeKeywordsResp
-func (c *ClientWithResponses) UpdateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeKeywordsParams, body UpdateSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*UpdateSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16235,16 +17247,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsNegativeKeywordsWithApplica
 }
 
 // DeleteSponsoredProductsNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsNegativeKeywordsResp
-func (c *ClientWithResponses) DeleteSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeKeywordsParams, body DeleteSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*DeleteSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16252,16 +17264,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsNegativeKeywordsWithApplica
 }
 
 // ListSponsoredProductsNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsNegativeKeywordsResp
-func (c *ClientWithResponses) ListSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.ListSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, contentType string, body io.Reader) (*ListSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.ListSponsoredProductsNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeKeywordsResp, error) {
-	rsp, err := c.ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeKeywordsParams, body ListSponsoredProductsNegativeKeywordsApplicationVndSpNegativeKeywordV3PlusJSONRequestBody) (*ListSponsoredProductsNegativeKeywordsResp, error) {
+	rsp, err := c.ListSponsoredProductsNegativeKeywordsWithApplicationVndSpNegativeKeywordV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16269,16 +17281,16 @@ func (c *ClientWithResponses) ListSponsoredProductsNegativeKeywordsWithApplicati
 }
 
 // CreateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsNegativeTargetingClausesResp
-func (c *ClientWithResponses) CreateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.CreateSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*CreateSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.CreateSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsNegativeTargetingClausesParams, body CreateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*CreateSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.CreateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16286,16 +17298,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsNegativeTargetingClausesWit
 }
 
 // UpdateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsNegativeTargetingClausesResp
-func (c *ClientWithResponses) UpdateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.UpdateSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.UpdateSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsNegativeTargetingClausesParams, body UpdateSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*UpdateSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.UpdateSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16303,8 +17315,8 @@ func (c *ClientWithResponses) UpdateSponsoredProductsNegativeTargetingClausesWit
 }
 
 // GetNegativeBrandsWithResponse request returning *GetNegativeBrandsResp
-func (c *ClientWithResponses) GetNegativeBrandsWithResponse(ctx context.Context, params *GetNegativeBrandsParams, reqEditors ...RequestEditorFn) (*GetNegativeBrandsResp, error) {
-	rsp, err := c.GetNegativeBrands(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetNegativeBrandsWithResponse(ctx context.Context, params *GetNegativeBrandsParams) (*GetNegativeBrandsResp, error) {
+	rsp, err := c.GetNegativeBrands(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16312,16 +17324,16 @@ func (c *ClientWithResponses) GetNegativeBrandsWithResponse(ctx context.Context,
 }
 
 // SearchBrandsWithBodyWithResponse request with arbitrary body returning *SearchBrandsResp
-func (c *ClientWithResponses) SearchBrandsWithBodyWithResponse(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchBrandsResp, error) {
-	rsp, err := c.SearchBrandsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SearchBrandsWithBodyWithResponse(ctx context.Context, params *SearchBrandsParams, contentType string, body io.Reader) (*SearchBrandsResp, error) {
+	rsp, err := c.SearchBrandsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSearchBrandsResp(rsp)
 }
 
-func (c *ClientWithResponses) SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchBrandsResp, error) {
-	rsp, err := c.SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *SearchBrandsParams, body SearchBrandsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*SearchBrandsResp, error) {
+	rsp, err := c.SearchBrandsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16329,16 +17341,16 @@ func (c *ClientWithResponses) SearchBrandsWithApplicationVndSpproducttargetingV3
 }
 
 // DeleteSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsNegativeTargetingClausesResp
-func (c *ClientWithResponses) DeleteSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.DeleteSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.DeleteSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsNegativeTargetingClausesParams, body DeleteSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*DeleteSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.DeleteSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16346,16 +17358,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsNegativeTargetingClausesWit
 }
 
 // ListSponsoredProductsNegativeTargetingClausesWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsNegativeTargetingClausesResp
-func (c *ClientWithResponses) ListSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.ListSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsNegativeTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, contentType string, body io.Reader) (*ListSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.ListSponsoredProductsNegativeTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsNegativeTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsNegativeTargetingClausesResp, error) {
-	rsp, err := c.ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsNegativeTargetingClausesParams, body ListSponsoredProductsNegativeTargetingClausesApplicationVndSpNegativeTargetingClauseV3PlusJSONRequestBody) (*ListSponsoredProductsNegativeTargetingClausesResp, error) {
+	rsp, err := c.ListSponsoredProductsNegativeTargetingClausesWithApplicationVndSpNegativeTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16363,16 +17375,16 @@ func (c *ClientWithResponses) ListSponsoredProductsNegativeTargetingClausesWithA
 }
 
 // CreateSponsoredProductsProductAdsWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsProductAdsResp
-func (c *ClientWithResponses) CreateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.CreateSponsoredProductsProductAdsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*CreateSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.CreateSponsoredProductsProductAdsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsProductAdsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsProductAdsParams, body CreateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*CreateSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.CreateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16380,16 +17392,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsProductAdsWithApplicationVn
 }
 
 // UpdateSponsoredProductsProductAdsWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsProductAdsResp
-func (c *ClientWithResponses) UpdateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsProductAdsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*UpdateSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsProductAdsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsProductAdsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsProductAdsParams, body UpdateSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*UpdateSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.UpdateSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16397,16 +17409,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsProductAdsWithApplicationVn
 }
 
 // DeleteSponsoredProductsProductAdsWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsProductAdsResp
-func (c *ClientWithResponses) DeleteSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsProductAdsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*DeleteSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsProductAdsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsProductAdsResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsProductAdsParams, body DeleteSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*DeleteSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.DeleteSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16414,16 +17426,16 @@ func (c *ClientWithResponses) DeleteSponsoredProductsProductAdsWithApplicationVn
 }
 
 // ListSponsoredProductsProductAdsWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsProductAdsResp
-func (c *ClientWithResponses) ListSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.ListSponsoredProductsProductAdsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsProductAdsWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, contentType string, body io.Reader) (*ListSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.ListSponsoredProductsProductAdsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsProductAdsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsProductAdsResp, error) {
-	rsp, err := c.ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsProductAdsParams, body ListSponsoredProductsProductAdsApplicationVndSpProductAdV3PlusJSONRequestBody) (*ListSponsoredProductsProductAdsResp, error) {
+	rsp, err := c.ListSponsoredProductsProductAdsWithApplicationVndSpProductAdV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16431,16 +17443,16 @@ func (c *ClientWithResponses) ListSponsoredProductsProductAdsWithApplicationVndS
 }
 
 // CreateOptimizationRuleWithBodyWithResponse request with arbitrary body returning *CreateOptimizationRuleResp
-func (c *ClientWithResponses) CreateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateOptimizationRuleResp, error) {
-	rsp, err := c.CreateOptimizationRuleWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, contentType string, body io.Reader) (*CreateOptimizationRuleResp, error) {
+	rsp, err := c.CreateOptimizationRuleWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateOptimizationRuleResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateOptimizationRuleResp, error) {
-	rsp, err := c.CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateOptimizationRuleParams, body CreateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*CreateOptimizationRuleResp, error) {
+	rsp, err := c.CreateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16448,16 +17460,16 @@ func (c *ClientWithResponses) CreateOptimizationRuleWithApplicationVndOptimizati
 }
 
 // UpdateOptimizationRuleWithBodyWithResponse request with arbitrary body returning *UpdateOptimizationRuleResp
-func (c *ClientWithResponses) UpdateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateOptimizationRuleResp, error) {
-	rsp, err := c.UpdateOptimizationRuleWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateOptimizationRuleWithBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, contentType string, body io.Reader) (*UpdateOptimizationRuleResp, error) {
+	rsp, err := c.UpdateOptimizationRuleWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateOptimizationRuleResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateOptimizationRuleResp, error) {
-	rsp, err := c.UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateOptimizationRuleParams, body UpdateOptimizationRuleApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*UpdateOptimizationRuleResp, error) {
+	rsp, err := c.UpdateOptimizationRuleWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16465,16 +17477,16 @@ func (c *ClientWithResponses) UpdateOptimizationRuleWithApplicationVndOptimizati
 }
 
 // GetOptimizationRuleEligibilityWithBodyWithResponse request with arbitrary body returning *GetOptimizationRuleEligibilityResp
-func (c *ClientWithResponses) GetOptimizationRuleEligibilityWithBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetOptimizationRuleEligibilityResp, error) {
-	rsp, err := c.GetOptimizationRuleEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetOptimizationRuleEligibilityWithBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, contentType string, body io.Reader) (*GetOptimizationRuleEligibilityResp, error) {
+	rsp, err := c.GetOptimizationRuleEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetOptimizationRuleEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetOptimizationRuleEligibilityResp, error) {
-	rsp, err := c.GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetOptimizationRuleEligibilityParams, body GetOptimizationRuleEligibilityApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*GetOptimizationRuleEligibilityResp, error) {
+	rsp, err := c.GetOptimizationRuleEligibilityWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16482,16 +17494,16 @@ func (c *ClientWithResponses) GetOptimizationRuleEligibilityWithApplicationVndOp
 }
 
 // GetRuleNotificationWithBodyWithResponse request with arbitrary body returning *GetRuleNotificationResp
-func (c *ClientWithResponses) GetRuleNotificationWithBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetRuleNotificationResp, error) {
-	rsp, err := c.GetRuleNotificationWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetRuleNotificationWithBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, contentType string, body io.Reader) (*GetRuleNotificationResp, error) {
+	rsp, err := c.GetRuleNotificationWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetRuleNotificationResp(rsp)
 }
 
-func (c *ClientWithResponses) GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRuleNotificationResp, error) {
-	rsp, err := c.GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBodyWithResponse(ctx context.Context, params *GetRuleNotificationParams, body GetRuleNotificationApplicationVndOptimizationrulesV1PlusJSONRequestBody) (*GetRuleNotificationResp, error) {
+	rsp, err := c.GetRuleNotificationWithApplicationVndOptimizationrulesV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16499,8 +17511,8 @@ func (c *ClientWithResponses) GetRuleNotificationWithApplicationVndOptimizationr
 }
 
 // DeleteCampaignOptimizationRuleWithResponse request returning *DeleteCampaignOptimizationRuleResp
-func (c *ClientWithResponses) DeleteCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*DeleteCampaignOptimizationRuleResp, error) {
-	rsp, err := c.DeleteCampaignOptimizationRule(ctx, campaignOptimizationId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *DeleteCampaignOptimizationRuleParams) (*DeleteCampaignOptimizationRuleResp, error) {
+	rsp, err := c.DeleteCampaignOptimizationRule(ctx, campaignOptimizationId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16508,8 +17520,8 @@ func (c *ClientWithResponses) DeleteCampaignOptimizationRuleWithResponse(ctx con
 }
 
 // GetCampaignOptimizationRuleWithResponse request returning *GetCampaignOptimizationRuleResp
-func (c *ClientWithResponses) GetCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams, reqEditors ...RequestEditorFn) (*GetCampaignOptimizationRuleResp, error) {
-	rsp, err := c.GetCampaignOptimizationRule(ctx, campaignOptimizationId, params, reqEditors...)
+func (c *ClientWithResponses) GetCampaignOptimizationRuleWithResponse(ctx context.Context, campaignOptimizationId string, params *GetCampaignOptimizationRuleParams) (*GetCampaignOptimizationRuleResp, error) {
+	rsp, err := c.GetCampaignOptimizationRule(ctx, campaignOptimizationId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16517,16 +17529,16 @@ func (c *ClientWithResponses) GetCampaignOptimizationRuleWithResponse(ctx contex
 }
 
 // CreateSponsoredProductsTargetingClausesWithBodyWithResponse request with arbitrary body returning *CreateSponsoredProductsTargetingClausesResp
-func (c *ClientWithResponses) CreateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.CreateSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*CreateSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.CreateSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSponsoredProductsTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateSponsoredProductsTargetingClausesParams, body CreateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*CreateSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.CreateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16534,16 +17546,16 @@ func (c *ClientWithResponses) CreateSponsoredProductsTargetingClausesWithApplica
 }
 
 // UpdateSponsoredProductsTargetingClausesWithBodyWithResponse request with arbitrary body returning *UpdateSponsoredProductsTargetingClausesResp
-func (c *ClientWithResponses) UpdateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.UpdateSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*UpdateSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.UpdateSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSponsoredProductsTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSponsoredProductsTargetingClausesParams, body UpdateSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*UpdateSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.UpdateSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16551,16 +17563,16 @@ func (c *ClientWithResponses) UpdateSponsoredProductsTargetingClausesWithApplica
 }
 
 // GetThemeBasedBidRecommendationForAdGroupV1WithBodyWithResponse request with arbitrary body returning *GetThemeBasedBidRecommendationForAdGroupV1Resp
-func (c *ClientWithResponses) GetThemeBasedBidRecommendationForAdGroupV1WithBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error) {
-	rsp, err := c.GetThemeBasedBidRecommendationForAdGroupV1WithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetThemeBasedBidRecommendationForAdGroupV1WithBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, contentType string, body io.Reader) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error) {
+	rsp, err := c.GetThemeBasedBidRecommendationForAdGroupV1WithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetThemeBasedBidRecommendationForAdGroupV1Resp(rsp)
 }
 
-func (c *ClientWithResponses) GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error) {
-	rsp, err := c.GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetThemeBasedBidRecommendationForAdGroupV1Params, body GetThemeBasedBidRecommendationForAdGroupV1ApplicationVndSpthemebasedbidrecommendationV3PlusJSONRequestBody) (*GetThemeBasedBidRecommendationForAdGroupV1Resp, error) {
+	rsp, err := c.GetThemeBasedBidRecommendationForAdGroupV1WithApplicationVndSpthemebasedbidrecommendationV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16568,8 +17580,8 @@ func (c *ClientWithResponses) GetThemeBasedBidRecommendationForAdGroupV1WithAppl
 }
 
 // GetTargetableCategoriesWithResponse request returning *GetTargetableCategoriesResp
-func (c *ClientWithResponses) GetTargetableCategoriesWithResponse(ctx context.Context, params *GetTargetableCategoriesParams, reqEditors ...RequestEditorFn) (*GetTargetableCategoriesResp, error) {
-	rsp, err := c.GetTargetableCategories(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetTargetableCategoriesWithResponse(ctx context.Context, params *GetTargetableCategoriesParams) (*GetTargetableCategoriesResp, error) {
+	rsp, err := c.GetTargetableCategories(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16577,16 +17589,16 @@ func (c *ClientWithResponses) GetTargetableCategoriesWithResponse(ctx context.Co
 }
 
 // GetCategoryRecommendationsForASINsWithBodyWithResponse request with arbitrary body returning *GetCategoryRecommendationsForASINsResp
-func (c *ClientWithResponses) GetCategoryRecommendationsForASINsWithBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetCategoryRecommendationsForASINsResp, error) {
-	rsp, err := c.GetCategoryRecommendationsForASINsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetCategoryRecommendationsForASINsWithBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, contentType string, body io.Reader) (*GetCategoryRecommendationsForASINsResp, error) {
+	rsp, err := c.GetCategoryRecommendationsForASINsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetCategoryRecommendationsForASINsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetCategoryRecommendationsForASINsResp, error) {
-	rsp, err := c.GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetCategoryRecommendationsForASINsParams, body GetCategoryRecommendationsForASINsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*GetCategoryRecommendationsForASINsResp, error) {
+	rsp, err := c.GetCategoryRecommendationsForASINsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16594,8 +17606,8 @@ func (c *ClientWithResponses) GetCategoryRecommendationsForASINsWithApplicationV
 }
 
 // GetRefinementsForCategoryWithResponse request returning *GetRefinementsForCategoryResp
-func (c *ClientWithResponses) GetRefinementsForCategoryWithResponse(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams, reqEditors ...RequestEditorFn) (*GetRefinementsForCategoryResp, error) {
-	rsp, err := c.GetRefinementsForCategory(ctx, categoryId, params, reqEditors...)
+func (c *ClientWithResponses) GetRefinementsForCategoryWithResponse(ctx context.Context, categoryId string, params *GetRefinementsForCategoryParams) (*GetRefinementsForCategoryResp, error) {
+	rsp, err := c.GetRefinementsForCategory(ctx, categoryId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -16603,16 +17615,16 @@ func (c *ClientWithResponses) GetRefinementsForCategoryWithResponse(ctx context.
 }
 
 // DeleteSponsoredProductsTargetingClausesWithBodyWithResponse request with arbitrary body returning *DeleteSponsoredProductsTargetingClausesResp
-func (c *ClientWithResponses) DeleteSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.DeleteSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*DeleteSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.DeleteSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseDeleteSponsoredProductsTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*DeleteSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *DeleteSponsoredProductsTargetingClausesParams, body DeleteSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*DeleteSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.DeleteSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16620,32 +17632,32 @@ func (c *ClientWithResponses) DeleteSponsoredProductsTargetingClausesWithApplica
 }
 
 // GetRankedKeywordRecommendationWithBodyWithResponse request with arbitrary body returning *GetRankedKeywordRecommendationResp
-func (c *ClientWithResponses) GetRankedKeywordRecommendationWithBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error) {
-	rsp, err := c.GetRankedKeywordRecommendationWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetRankedKeywordRecommendationWithBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, contentType string, body io.Reader) (*GetRankedKeywordRecommendationResp, error) {
+	rsp, err := c.GetRankedKeywordRecommendationWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetRankedKeywordRecommendationResp(rsp)
 }
 
-func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error) {
-	rsp, err := c.GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV3PlusJSONRequestBody) (*GetRankedKeywordRecommendationResp, error) {
+	rsp, err := c.GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetRankedKeywordRecommendationResp(rsp)
 }
 
-func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error) {
-	rsp, err := c.GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV4PlusJSONRequestBody) (*GetRankedKeywordRecommendationResp, error) {
+	rsp, err := c.GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV4PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetRankedKeywordRecommendationResp(rsp)
 }
 
-func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetRankedKeywordRecommendationResp, error) {
-	rsp, err := c.GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBodyWithResponse(ctx context.Context, params *GetRankedKeywordRecommendationParams, body GetRankedKeywordRecommendationApplicationVndSpkeywordsrecommendationV5PlusJSONRequestBody) (*GetRankedKeywordRecommendationResp, error) {
+	rsp, err := c.GetRankedKeywordRecommendationWithApplicationVndSpkeywordsrecommendationV5PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16653,16 +17665,16 @@ func (c *ClientWithResponses) GetRankedKeywordRecommendationWithApplicationVndSp
 }
 
 // ListSponsoredProductsTargetingClausesWithBodyWithResponse request with arbitrary body returning *ListSponsoredProductsTargetingClausesResp
-func (c *ClientWithResponses) ListSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.ListSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsTargetingClausesWithBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, contentType string, body io.Reader) (*ListSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.ListSponsoredProductsTargetingClausesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListSponsoredProductsTargetingClausesResp(rsp)
 }
 
-func (c *ClientWithResponses) ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ListSponsoredProductsTargetingClausesResp, error) {
-	rsp, err := c.ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBodyWithResponse(ctx context.Context, params *ListSponsoredProductsTargetingClausesParams, body ListSponsoredProductsTargetingClausesApplicationVndSpTargetingClauseV3PlusJSONRequestBody) (*ListSponsoredProductsTargetingClausesResp, error) {
+	rsp, err := c.ListSponsoredProductsTargetingClausesWithApplicationVndSpTargetingClauseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16670,16 +17682,16 @@ func (c *ClientWithResponses) ListSponsoredProductsTargetingClausesWithApplicati
 }
 
 // GetTargetableASINCountsWithBodyWithResponse request with arbitrary body returning *GetTargetableASINCountsResp
-func (c *ClientWithResponses) GetTargetableASINCountsWithBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetableASINCountsResp, error) {
-	rsp, err := c.GetTargetableASINCountsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetableASINCountsWithBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, contentType string, body io.Reader) (*GetTargetableASINCountsResp, error) {
+	rsp, err := c.GetTargetableASINCountsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetableASINCountsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetableASINCountsResp, error) {
-	rsp, err := c.GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetableASINCountsParams, body GetTargetableASINCountsApplicationVndSpproducttargetingV3PlusJSONRequestBody) (*GetTargetableASINCountsResp, error) {
+	rsp, err := c.GetTargetableASINCountsWithApplicationVndSpproducttargetingV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -16687,16 +17699,16 @@ func (c *ClientWithResponses) GetTargetableASINCountsWithApplicationVndSpproduct
 }
 
 // GetProductRecommendationsWithBodyWithResponse request with arbitrary body returning *GetProductRecommendationsResp
-func (c *ClientWithResponses) GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error) {
-	rsp, err := c.GetProductRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*GetProductRecommendationsResp, error) {
+	rsp, err := c.GetProductRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetProductRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error) {
-	rsp, err := c.GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSpproductrecommendationV3PlusJSONRequestBody) (*GetProductRecommendationsResp, error) {
+	rsp, err := c.GetProductRecommendationsWithApplicationVndSpproductrecommendationV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

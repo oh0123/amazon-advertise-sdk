@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 // Defines values for AsinEngagementDimension.
@@ -648,8 +649,11 @@ func (t *InsightMetricsDetail_AdditionalProperties) UnmarshalJSON(b []byte) erro
 	return err
 }
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -673,6 +677,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -698,6 +709,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -719,65 +734,106 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetAsinEngagementForStoreWithBody request with any body
-	GetAsinEngagementForStoreWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAsinEngagementForStoreWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*http.Response, error)
 
-	GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetInsightsForStoreAPIWithBody request with any body
-	GetInsightsForStoreAPIWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetInsightsForStoreAPIWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*http.Response, error)
 
-	GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) GetAsinEngagementForStoreWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAsinEngagementForStoreWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetAsinEngagementForStoreRequestWithBody(c.Server, brandEntityId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetAsinEngagementForStoreRequestWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(c.Server, brandEntityId, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetInsightsForStoreAPIWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetInsightsForStoreAPIWithBody(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetInsightsForStoreAPIRequestWithBody(c.Server, brandEntityId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetInsightsForStoreAPIRequestWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(c.Server, brandEntityId, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGetAsinEngagementForStoreRequestWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody calls the generic GetAsinEngagementForStore builder with application/vnd.GetAsinEngagementForStoreRequest.v1+json body
@@ -874,13 +930,8 @@ func NewGetInsightsForStoreAPIRequestWithBody(server string, brandEntityId strin
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -888,7 +939,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -918,14 +976,14 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetAsinEngagementForStoreWithBodyWithResponse request with any body
-	GetAsinEngagementForStoreWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetAsinEngagementForStoreResp, error)
+	GetAsinEngagementForStoreWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*GetAsinEngagementForStoreResp, error)
 
-	GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetAsinEngagementForStoreResp, error)
+	GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody) (*GetAsinEngagementForStoreResp, error)
 
 	// GetInsightsForStoreAPIWithBodyWithResponse request with any body
-	GetInsightsForStoreAPIWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetInsightsForStoreAPIResp, error)
+	GetInsightsForStoreAPIWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*GetInsightsForStoreAPIResp, error)
 
-	GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetInsightsForStoreAPIResp, error)
+	GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody) (*GetInsightsForStoreAPIResp, error)
 }
 
 type GetAsinEngagementForStoreResp struct {
@@ -987,16 +1045,16 @@ func (r GetInsightsForStoreAPIResp) StatusCode() int {
 }
 
 // GetAsinEngagementForStoreWithBodyWithResponse request with arbitrary body returning *GetAsinEngagementForStoreResp
-func (c *ClientWithResponses) GetAsinEngagementForStoreWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetAsinEngagementForStoreResp, error) {
-	rsp, err := c.GetAsinEngagementForStoreWithBody(ctx, brandEntityId, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetAsinEngagementForStoreWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*GetAsinEngagementForStoreResp, error) {
+	rsp, err := c.GetAsinEngagementForStoreWithBody(ctx, brandEntityId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetAsinEngagementForStoreResp(rsp)
 }
 
-func (c *ClientWithResponses) GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetAsinEngagementForStoreResp, error) {
-	rsp, err := c.GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(ctx, brandEntityId, body, reqEditors...)
+func (c *ClientWithResponses) GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetAsinEngagementForStoreApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONRequestBody) (*GetAsinEngagementForStoreResp, error) {
+	rsp, err := c.GetAsinEngagementForStoreWithApplicationVndGetAsinEngagementForStoreRequestV1PlusJSONBody(ctx, brandEntityId, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1004,16 +1062,16 @@ func (c *ClientWithResponses) GetAsinEngagementForStoreWithApplicationVndGetAsin
 }
 
 // GetInsightsForStoreAPIWithBodyWithResponse request with arbitrary body returning *GetInsightsForStoreAPIResp
-func (c *ClientWithResponses) GetInsightsForStoreAPIWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetInsightsForStoreAPIResp, error) {
-	rsp, err := c.GetInsightsForStoreAPIWithBody(ctx, brandEntityId, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetInsightsForStoreAPIWithBodyWithResponse(ctx context.Context, brandEntityId string, contentType string, body io.Reader) (*GetInsightsForStoreAPIResp, error) {
+	rsp, err := c.GetInsightsForStoreAPIWithBody(ctx, brandEntityId, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetInsightsForStoreAPIResp(rsp)
 }
 
-func (c *ClientWithResponses) GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetInsightsForStoreAPIResp, error) {
-	rsp, err := c.GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(ctx, brandEntityId, body, reqEditors...)
+func (c *ClientWithResponses) GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBodyWithResponse(ctx context.Context, brandEntityId string, body GetInsightsForStoreAPIApplicationVndGetInsightsForStoreRequestV1PlusJSONRequestBody) (*GetInsightsForStoreAPIResp, error) {
+	rsp, err := c.GetInsightsForStoreAPIWithApplicationVndGetInsightsForStoreRequestV1PlusJSONBody(ctx, brandEntityId, body)
 	if err != nil {
 		return nil, err
 	}

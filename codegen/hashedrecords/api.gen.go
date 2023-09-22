@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // HashedRecord defines model for HashedRecord.
@@ -79,8 +80,11 @@ type UploadHashedRecordsParams struct {
 // UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody defines body for UploadHashedRecords for application/vnd.dpuploadhashedrecordsrequest.v3+json ContentType.
 type UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -104,6 +108,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -129,6 +140,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -150,36 +165,61 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// UploadHashedRecordsWithBody request with any body
-	UploadHashedRecordsWithBody(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UploadHashedRecordsWithBody(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) UploadHashedRecordsWithBody(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UploadHashedRecordsWithBody(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUploadHashedRecordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUploadHashedRecordsRequestWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewUploadHashedRecordsRequestWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody calls the generic UploadHashedRecords builder with application/vnd.dpuploadhashedrecordsrequest.v3+json body
@@ -253,13 +293,8 @@ func NewUploadHashedRecordsRequestWithBody(server string, params *UploadHashedRe
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -267,7 +302,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -297,9 +339,9 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// UploadHashedRecordsWithBodyWithResponse request with any body
-	UploadHashedRecordsWithBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadHashedRecordsResp, error)
+	UploadHashedRecordsWithBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader) (*UploadHashedRecordsResp, error)
 
-	UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UploadHashedRecordsResp, error)
+	UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody) (*UploadHashedRecordsResp, error)
 }
 
 type UploadHashedRecordsResp struct {
@@ -352,16 +394,16 @@ func (r UploadHashedRecordsResp) StatusCode() int {
 }
 
 // UploadHashedRecordsWithBodyWithResponse request with arbitrary body returning *UploadHashedRecordsResp
-func (c *ClientWithResponses) UploadHashedRecordsWithBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UploadHashedRecordsResp, error) {
-	rsp, err := c.UploadHashedRecordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UploadHashedRecordsWithBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, contentType string, body io.Reader) (*UploadHashedRecordsResp, error) {
+	rsp, err := c.UploadHashedRecordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUploadHashedRecordsResp(rsp)
 }
 
-func (c *ClientWithResponses) UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UploadHashedRecordsResp, error) {
-	rsp, err := c.UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *UploadHashedRecordsParams, body UploadHashedRecordsApplicationVndDpuploadhashedrecordsrequestV3PlusJSONRequestBody) (*UploadHashedRecordsResp, error) {
+	rsp, err := c.UploadHashedRecordsWithApplicationVndDpuploadhashedrecordsrequestV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

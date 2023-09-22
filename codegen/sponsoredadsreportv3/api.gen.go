@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AsyncReportStatus.
@@ -204,8 +205,11 @@ type GetAsyncReportParams struct {
 // CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody defines body for CreateAsyncReport for application/vnd.createasyncreportrequest.v3+json ContentType.
 type CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody = CreateAsyncReportRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -229,6 +233,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -254,6 +265,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -275,66 +290,107 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// CreateAsyncReportWithBody request with any body
-	CreateAsyncReportWithBody(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAsyncReportWithBody(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteAsyncReport request
-	DeleteAsyncReport(ctx context.Context, reportId string, params *DeleteAsyncReportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteAsyncReport(ctx context.Context, reportId string, params *DeleteAsyncReportParams) (*http.Response, error)
 
 	// GetAsyncReport request
-	GetAsyncReport(ctx context.Context, reportId string, params *GetAsyncReportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAsyncReport(ctx context.Context, reportId string, params *GetAsyncReportParams) (*http.Response, error)
 }
 
-func (c *Client) CreateAsyncReportWithBody(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAsyncReportWithBody(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateAsyncReportRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateAsyncReportRequestWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteAsyncReport(ctx context.Context, reportId string, params *DeleteAsyncReportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteAsyncReport(ctx context.Context, reportId string, params *DeleteAsyncReportParams) (*http.Response, error) {
 	req, err := NewDeleteAsyncReportRequest(c.Server, reportId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetAsyncReport(ctx context.Context, reportId string, params *GetAsyncReportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAsyncReport(ctx context.Context, reportId string, params *GetAsyncReportParams) (*http.Response, error) {
 	req, err := NewGetAsyncReportRequest(c.Server, reportId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewCreateAsyncReportRequestWithApplicationVndCreateasyncreportrequestV3PlusJSONBody calls the generic CreateAsyncReport builder with application/vnd.createasyncreportrequest.v3+json body
@@ -511,13 +567,8 @@ func NewGetAsyncReportRequest(server string, reportId string, params *GetAsyncRe
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -525,7 +576,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -555,15 +613,15 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// CreateAsyncReportWithBodyWithResponse request with any body
-	CreateAsyncReportWithBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAsyncReportResp, error)
+	CreateAsyncReportWithBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader) (*CreateAsyncReportResp, error)
 
-	CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAsyncReportResp, error)
+	CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody) (*CreateAsyncReportResp, error)
 
 	// DeleteAsyncReportWithResponse request
-	DeleteAsyncReportWithResponse(ctx context.Context, reportId string, params *DeleteAsyncReportParams, reqEditors ...RequestEditorFn) (*DeleteAsyncReportResp, error)
+	DeleteAsyncReportWithResponse(ctx context.Context, reportId string, params *DeleteAsyncReportParams) (*DeleteAsyncReportResp, error)
 
 	// GetAsyncReportWithResponse request
-	GetAsyncReportWithResponse(ctx context.Context, reportId string, params *GetAsyncReportParams, reqEditors ...RequestEditorFn) (*GetAsyncReportResp, error)
+	GetAsyncReportWithResponse(ctx context.Context, reportId string, params *GetAsyncReportParams) (*GetAsyncReportResp, error)
 }
 
 type CreateAsyncReportResp struct {
@@ -649,16 +707,16 @@ func (r GetAsyncReportResp) StatusCode() int {
 }
 
 // CreateAsyncReportWithBodyWithResponse request with arbitrary body returning *CreateAsyncReportResp
-func (c *ClientWithResponses) CreateAsyncReportWithBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAsyncReportResp, error) {
-	rsp, err := c.CreateAsyncReportWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateAsyncReportWithBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, contentType string, body io.Reader) (*CreateAsyncReportResp, error) {
+	rsp, err := c.CreateAsyncReportWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateAsyncReportResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAsyncReportResp, error) {
-	rsp, err := c.CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateAsyncReportParams, body CreateAsyncReportApplicationVndCreateasyncreportrequestV3PlusJSONRequestBody) (*CreateAsyncReportResp, error) {
+	rsp, err := c.CreateAsyncReportWithApplicationVndCreateasyncreportrequestV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -666,8 +724,8 @@ func (c *ClientWithResponses) CreateAsyncReportWithApplicationVndCreateasyncrepo
 }
 
 // DeleteAsyncReportWithResponse request returning *DeleteAsyncReportResp
-func (c *ClientWithResponses) DeleteAsyncReportWithResponse(ctx context.Context, reportId string, params *DeleteAsyncReportParams, reqEditors ...RequestEditorFn) (*DeleteAsyncReportResp, error) {
-	rsp, err := c.DeleteAsyncReport(ctx, reportId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteAsyncReportWithResponse(ctx context.Context, reportId string, params *DeleteAsyncReportParams) (*DeleteAsyncReportResp, error) {
+	rsp, err := c.DeleteAsyncReport(ctx, reportId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -675,8 +733,8 @@ func (c *ClientWithResponses) DeleteAsyncReportWithResponse(ctx context.Context,
 }
 
 // GetAsyncReportWithResponse request returning *GetAsyncReportResp
-func (c *ClientWithResponses) GetAsyncReportWithResponse(ctx context.Context, reportId string, params *GetAsyncReportParams, reqEditors ...RequestEditorFn) (*GetAsyncReportResp, error) {
-	rsp, err := c.GetAsyncReport(ctx, reportId, params, reqEditors...)
+func (c *ClientWithResponses) GetAsyncReportWithResponse(ctx context.Context, reportId string, params *GetAsyncReportParams) (*GetAsyncReportResp, error) {
+	rsp, err := c.GetAsyncReport(ctx, reportId, params)
 	if err != nil {
 		return nil, err
 	}

@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AdTypeV1.
@@ -3887,8 +3888,11 @@ type UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV
 // CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody defines body for CreateMeasurementStudiesSurvey for application/vnd.measurementstudiessurvey.v1+json ContentType.
 type CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody = MeasurementStudiesSurvey
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -3912,6 +3916,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -3937,6 +3948,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -3958,1034 +3973,1611 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// CheckDSPAudienceResearchEligibilityWithBody request with any body
-	CheckDSPAudienceResearchEligibilityWithBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPAudienceResearchEligibilityWithBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*http.Response, error)
 
 	// CheckDSPBrandLiftEligibilityWithBody request with any body
-	CheckDSPBrandLiftEligibilityWithBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPBrandLiftEligibilityWithBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody) (*http.Response, error)
 
-	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*http.Response, error)
 
 	// CheckDSPCreativeTestingEligibilityWithBody request with any body
-	CheckDSPCreativeTestingEligibilityWithBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPCreativeTestingEligibilityWithBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*http.Response, error)
 
 	// CheckDSPOmnichannelMetricsEligibilityWithBody request with any body
-	CheckDSPOmnichannelMetricsEligibilityWithBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPOmnichannelMetricsEligibilityWithBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*http.Response, error)
 
-	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*http.Response, error)
 
 	// GetDSPAudienceResearchStudies request
-	GetDSPAudienceResearchStudies(ctx context.Context, params *GetDSPAudienceResearchStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPAudienceResearchStudies(ctx context.Context, params *GetDSPAudienceResearchStudiesParams) (*http.Response, error)
 
 	// CreateDSPAudienceResearchStudyWithBody request with any body
-	CreateDSPAudienceResearchStudyWithBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPAudienceResearchStudyWithBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateDSPAudienceResearchStudyWithBody request with any body
-	UpdateDSPAudienceResearchStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPAudienceResearchStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
 	// GetDSPAudienceResearchStudyResult request
-	GetDSPAudienceResearchStudyResult(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPAudienceResearchStudyResult(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams) (*http.Response, error)
 
 	// GetDSPBrandLiftStudies request
-	GetDSPBrandLiftStudies(ctx context.Context, params *GetDSPBrandLiftStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPBrandLiftStudies(ctx context.Context, params *GetDSPBrandLiftStudiesParams) (*http.Response, error)
 
 	// CreateDSPBrandLiftStudiesWithBody request with any body
-	CreateDSPBrandLiftStudiesWithBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPBrandLiftStudiesWithBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateDSPBrandLiftStudiesWithBody request with any body
-	UpdateDSPBrandLiftStudiesWithBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPBrandLiftStudiesWithBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error)
 
 	// GetDSPCreativeTestingStudies request
-	GetDSPCreativeTestingStudies(ctx context.Context, params *GetDSPCreativeTestingStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPCreativeTestingStudies(ctx context.Context, params *GetDSPCreativeTestingStudiesParams) (*http.Response, error)
 
 	// CreateDSPCreativeTestingStudyWithBody request with any body
-	CreateDSPCreativeTestingStudyWithBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPCreativeTestingStudyWithBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateDSPCreativeTestingStudyWithBody request with any body
-	UpdateDSPCreativeTestingStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPCreativeTestingStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
 	// GetDSPCreativeTestingStudyResult request
-	GetDSPCreativeTestingStudyResult(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPCreativeTestingStudyResult(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams) (*http.Response, error)
 
 	// GetDSPOmnichannelMetricsStudies request
-	GetDSPOmnichannelMetricsStudies(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPOmnichannelMetricsStudies(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams) (*http.Response, error)
 
 	// CreateDSPOmnichannelMetricsStudiesWithBody request with any body
-	CreateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
-	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateDSPOmnichannelMetricsStudiesWithBody request with any body
-	UpdateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error)
 
 	// GetDSPOmnichannelMetricsStudyResult request
-	GetDSPOmnichannelMetricsStudyResult(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPOmnichannelMetricsStudyResult(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams) (*http.Response, error)
 
 	// CheckPlanningEligibilityWithBody request with any body
-	CheckPlanningEligibilityWithBody(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckPlanningEligibilityWithBody(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*http.Response, error)
 
-	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*http.Response, error)
 
 	// CancelMeasurementStudies request
-	CancelMeasurementStudies(ctx context.Context, params *CancelMeasurementStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CancelMeasurementStudies(ctx context.Context, params *CancelMeasurementStudiesParams) (*http.Response, error)
 
 	// GetStudies request
-	GetStudies(ctx context.Context, params *GetStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetStudies(ctx context.Context, params *GetStudiesParams) (*http.Response, error)
 
 	// GetDSPBrandLiftStudyResult request
-	GetDSPBrandLiftStudyResult(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDSPBrandLiftStudyResult(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams) (*http.Response, error)
 
 	// GetSurveys request
-	GetSurveys(ctx context.Context, params *GetSurveysParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSurveys(ctx context.Context, params *GetSurveysParams) (*http.Response, error)
 
 	// CreateSurveysWithBody request with any body
-	CreateSurveysWithBody(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSurveysWithBody(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateSurveysWithBody request with any body
-	UpdateSurveysWithBody(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSurveysWithBody(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error)
 
 	// GetCuratedStudyResult request
-	GetCuratedStudyResult(ctx context.Context, studyId string, params *GetCuratedStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCuratedStudyResult(ctx context.Context, studyId string, params *GetCuratedStudyResultParams) (*http.Response, error)
 
 	// VendorProductWithBody request with any body
-	VendorProductWithBody(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	VendorProductWithBody(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader) (*http.Response, error)
 
-	VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody) (*http.Response, error)
 
-	VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody) (*http.Response, error)
 
 	// OmnichannelMetricsBrandSearchWithBody request with any body
-	OmnichannelMetricsBrandSearchWithBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	OmnichannelMetricsBrandSearchWithBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader) (*http.Response, error)
 
-	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody) (*http.Response, error)
 
-	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody) (*http.Response, error)
 
 	// VendorProductPolicy request
-	VendorProductPolicy(ctx context.Context, params *VendorProductPolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	VendorProductPolicy(ctx context.Context, params *VendorProductPolicyParams) (*http.Response, error)
 
 	// VendorProductSurveyQuestionTemplates request
-	VendorProductSurveyQuestionTemplates(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	VendorProductSurveyQuestionTemplates(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams) (*http.Response, error)
 
 	// UpdateMeasurementStudiesBrandLiftWithBody request with any body
-	UpdateMeasurementStudiesBrandLiftWithBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateMeasurementStudiesBrandLiftWithBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateMeasurementStudiesSurveyWithBody request with any body
-	CreateMeasurementStudiesSurveyWithBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateMeasurementStudiesSurveyWithBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) CheckDSPAudienceResearchEligibilityWithBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPAudienceResearchEligibilityWithBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCheckDSPAudienceResearchEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckDSPAudienceResearchEligibilityRequestWithApplicationVndMeasurementeligibilityV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPBrandLiftEligibilityWithBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPBrandLiftEligibilityWithBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCheckDSPBrandLiftEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckDSPBrandLiftEligibilityRequestWithApplicationVndMeasurementeligibilityV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckDSPBrandLiftEligibilityRequestWithApplicationVndMeasurementeligibilityV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPCreativeTestingEligibilityWithBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPCreativeTestingEligibilityWithBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCheckDSPCreativeTestingEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckDSPCreativeTestingEligibilityRequestWithApplicationVndMeasurementeligibilityV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPOmnichannelMetricsEligibilityWithBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPOmnichannelMetricsEligibilityWithBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCheckDSPOmnichannelMetricsEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckDSPOmnichannelMetricsEligibilityRequestWithApplicationVndMeasurementeligibilityV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckDSPOmnichannelMetricsEligibilityRequestWithApplicationVndMeasurementeligibilityV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPAudienceResearchStudies(ctx context.Context, params *GetDSPAudienceResearchStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPAudienceResearchStudies(ctx context.Context, params *GetDSPAudienceResearchStudiesParams) (*http.Response, error) {
 	req, err := NewGetDSPAudienceResearchStudiesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPAudienceResearchStudyWithBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPAudienceResearchStudyWithBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateDSPAudienceResearchStudyRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPAudienceResearchStudyRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPAudienceResearchStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPAudienceResearchStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateDSPAudienceResearchStudyRequestWithBody(c.Server, studyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPAudienceResearchStudyRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, studyId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPAudienceResearchStudyResult(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPAudienceResearchStudyResult(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams) (*http.Response, error) {
 	req, err := NewGetDSPAudienceResearchStudyResultRequest(c.Server, studyId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPBrandLiftStudies(ctx context.Context, params *GetDSPBrandLiftStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPBrandLiftStudies(ctx context.Context, params *GetDSPBrandLiftStudiesParams) (*http.Response, error) {
 	req, err := NewGetDSPBrandLiftStudiesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPBrandLiftStudiesWithBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPBrandLiftStudiesWithBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateDSPBrandLiftStudiesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPBrandLiftStudiesWithBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPBrandLiftStudiesWithBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateDSPBrandLiftStudiesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPBrandLiftStudiesRequestWithApplicationVndStudymanagementV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPCreativeTestingStudies(ctx context.Context, params *GetDSPCreativeTestingStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPCreativeTestingStudies(ctx context.Context, params *GetDSPCreativeTestingStudiesParams) (*http.Response, error) {
 	req, err := NewGetDSPCreativeTestingStudiesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPCreativeTestingStudyWithBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPCreativeTestingStudyWithBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateDSPCreativeTestingStudyRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPCreativeTestingStudyRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPCreativeTestingStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPCreativeTestingStudyWithBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateDSPCreativeTestingStudyRequestWithBody(c.Server, studyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPCreativeTestingStudyRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, studyId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPCreativeTestingStudyResult(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPCreativeTestingStudyResult(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams) (*http.Response, error) {
 	req, err := NewGetDSPCreativeTestingStudyResultRequest(c.Server, studyId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPOmnichannelMetricsStudies(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPOmnichannelMetricsStudies(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams) (*http.Response, error) {
 	req, err := NewGetDSPOmnichannelMetricsStudiesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateDSPOmnichannelMetricsStudiesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPOmnichannelMetricsStudiesRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDSPOmnichannelMetricsStudiesRequestWithApplicationVndStudymanagementV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPOmnichannelMetricsStudiesWithBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateDSPOmnichannelMetricsStudiesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPOmnichannelMetricsStudiesRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDSPOmnichannelMetricsStudiesRequestWithApplicationVndStudymanagementV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPOmnichannelMetricsStudyResult(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPOmnichannelMetricsStudyResult(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams) (*http.Response, error) {
 	req, err := NewGetDSPOmnichannelMetricsStudyResultRequest(c.Server, studyId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckPlanningEligibilityWithBody(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckPlanningEligibilityWithBody(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCheckPlanningEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckPlanningEligibilityRequestWithApplicationVndMeasurementeligibilityV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCheckPlanningEligibilityRequestWithApplicationVndMeasurementeligibilityV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CancelMeasurementStudies(ctx context.Context, params *CancelMeasurementStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CancelMeasurementStudies(ctx context.Context, params *CancelMeasurementStudiesParams) (*http.Response, error) {
 	req, err := NewCancelMeasurementStudiesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetStudies(ctx context.Context, params *GetStudiesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetStudies(ctx context.Context, params *GetStudiesParams) (*http.Response, error) {
 	req, err := NewGetStudiesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDSPBrandLiftStudyResult(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDSPBrandLiftStudyResult(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams) (*http.Response, error) {
 	req, err := NewGetDSPBrandLiftStudyResultRequest(c.Server, studyId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSurveys(ctx context.Context, params *GetSurveysParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSurveys(ctx context.Context, params *GetSurveysParams) (*http.Response, error) {
 	req, err := NewGetSurveysRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSurveysWithBody(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSurveysWithBody(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSurveysRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSurveysRequestWithApplicationVndStudymanagementV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSurveysRequestWithApplicationVndStudymanagementV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSurveysRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSurveysRequestWithApplicationVndStudymanagementV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSurveysWithBody(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSurveysWithBody(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateSurveysRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSurveysRequestWithApplicationVndStudymanagementV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSurveysRequestWithApplicationVndStudymanagementV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSurveysRequestWithApplicationVndStudymanagementV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateSurveysRequestWithApplicationVndStudymanagementV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCuratedStudyResult(ctx context.Context, studyId string, params *GetCuratedStudyResultParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCuratedStudyResult(ctx context.Context, studyId string, params *GetCuratedStudyResultParams) (*http.Response, error) {
 	req, err := NewGetCuratedStudyResultRequest(c.Server, studyId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) VendorProductWithBody(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) VendorProductWithBody(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewVendorProductRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewVendorProductRequestWithApplicationVndMeasurementvendorV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBody(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewVendorProductRequestWithApplicationVndMeasurementvendorV11PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) OmnichannelMetricsBrandSearchWithBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) OmnichannelMetricsBrandSearchWithBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewOmnichannelMetricsBrandSearchRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewOmnichannelMetricsBrandSearchRequestWithApplicationVndOcmbrandsV12PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBody(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewOmnichannelMetricsBrandSearchRequestWithApplicationVndOcmbrandsV13PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) VendorProductPolicy(ctx context.Context, params *VendorProductPolicyParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) VendorProductPolicy(ctx context.Context, params *VendorProductPolicyParams) (*http.Response, error) {
 	req, err := NewVendorProductPolicyRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) VendorProductSurveyQuestionTemplates(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) VendorProductSurveyQuestionTemplates(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams) (*http.Response, error) {
 	req, err := NewVendorProductSurveyQuestionTemplatesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateMeasurementStudiesBrandLiftWithBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateMeasurementStudiesBrandLiftWithBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateMeasurementStudiesBrandLiftRequestWithBody(c.Server, studyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateMeasurementStudiesBrandLiftRequestWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(c.Server, studyId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateMeasurementStudiesSurveyWithBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateMeasurementStudiesSurveyWithBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateMeasurementStudiesSurveyRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateMeasurementStudiesSurveyRequestWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewCheckDSPAudienceResearchEligibilityRequestWithApplicationVndMeasurementeligibilityV12PlusJSONBody calls the generic CheckDSPAudienceResearchEligibility builder with application/vnd.measurementeligibility.v1.2+json body
@@ -5029,9 +5621,11 @@ func NewCheckDSPAudienceResearchEligibilityRequestWithBody(server string, params
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5045,9 +5639,11 @@ func NewCheckDSPAudienceResearchEligibilityRequestWithBody(server string, params
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5140,9 +5736,11 @@ func NewCheckDSPBrandLiftEligibilityRequestWithBody(server string, params *Check
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5156,9 +5754,11 @@ func NewCheckDSPBrandLiftEligibilityRequestWithBody(server string, params *Check
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5240,9 +5840,11 @@ func NewCheckDSPCreativeTestingEligibilityRequestWithBody(server string, params 
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5256,9 +5858,11 @@ func NewCheckDSPCreativeTestingEligibilityRequestWithBody(server string, params 
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5351,9 +5955,11 @@ func NewCheckDSPOmnichannelMetricsEligibilityRequestWithBody(server string, para
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5367,9 +5973,11 @@ func NewCheckDSPOmnichannelMetricsEligibilityRequestWithBody(server string, para
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5440,9 +6048,11 @@ func NewGetDSPAudienceResearchStudiesRequest(server string, params *GetDSPAudien
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5456,9 +6066,11 @@ func NewGetDSPAudienceResearchStudiesRequest(server string, params *GetDSPAudien
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5472,9 +6084,11 @@ func NewGetDSPAudienceResearchStudiesRequest(server string, params *GetDSPAudien
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5488,9 +6102,11 @@ func NewGetDSPAudienceResearchStudiesRequest(server string, params *GetDSPAudien
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5755,9 +6371,11 @@ func NewGetDSPBrandLiftStudiesRequest(server string, params *GetDSPBrandLiftStud
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5771,9 +6389,11 @@ func NewGetDSPBrandLiftStudiesRequest(server string, params *GetDSPBrandLiftStud
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5787,9 +6407,11 @@ func NewGetDSPBrandLiftStudiesRequest(server string, params *GetDSPBrandLiftStud
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -5803,9 +6425,11 @@ func NewGetDSPBrandLiftStudiesRequest(server string, params *GetDSPBrandLiftStud
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6064,9 +6688,11 @@ func NewGetDSPCreativeTestingStudiesRequest(server string, params *GetDSPCreativ
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6080,9 +6706,11 @@ func NewGetDSPCreativeTestingStudiesRequest(server string, params *GetDSPCreativ
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6096,9 +6724,11 @@ func NewGetDSPCreativeTestingStudiesRequest(server string, params *GetDSPCreativ
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6112,9 +6742,11 @@ func NewGetDSPCreativeTestingStudiesRequest(server string, params *GetDSPCreativ
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6379,9 +7011,11 @@ func NewGetDSPOmnichannelMetricsStudiesRequest(server string, params *GetDSPOmni
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6395,9 +7029,11 @@ func NewGetDSPOmnichannelMetricsStudiesRequest(server string, params *GetDSPOmni
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6411,9 +7047,11 @@ func NewGetDSPOmnichannelMetricsStudiesRequest(server string, params *GetDSPOmni
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6427,9 +7065,11 @@ func NewGetDSPOmnichannelMetricsStudiesRequest(server string, params *GetDSPOmni
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6731,9 +7371,11 @@ func NewCheckPlanningEligibilityRequestWithBody(server string, params *CheckPlan
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6747,9 +7389,11 @@ func NewCheckPlanningEligibilityRequestWithBody(server string, params *CheckPlan
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6820,9 +7464,11 @@ func NewCancelMeasurementStudiesRequest(server string, params *CancelMeasurement
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6891,9 +7537,11 @@ func NewGetStudiesRequest(server string, params *GetStudiesParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6907,9 +7555,11 @@ func NewGetStudiesRequest(server string, params *GetStudiesParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6923,9 +7573,11 @@ func NewGetStudiesRequest(server string, params *GetStudiesParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -6939,9 +7591,11 @@ func NewGetStudiesRequest(server string, params *GetStudiesParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7075,9 +7729,11 @@ func NewGetSurveysRequest(server string, params *GetSurveysParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7091,9 +7747,11 @@ func NewGetSurveysRequest(server string, params *GetSurveysParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7107,9 +7765,11 @@ func NewGetSurveysRequest(server string, params *GetSurveysParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7123,9 +7783,11 @@ func NewGetSurveysRequest(server string, params *GetSurveysParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7471,9 +8133,11 @@ func NewVendorProductRequestWithBody(server string, params *VendorProductParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7487,9 +8151,11 @@ func NewVendorProductRequestWithBody(server string, params *VendorProductParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7582,9 +8248,11 @@ func NewOmnichannelMetricsBrandSearchRequestWithBody(server string, params *Omni
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7598,9 +8266,11 @@ func NewOmnichannelMetricsBrandSearchRequestWithBody(server string, params *Omni
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7671,9 +8341,11 @@ func NewVendorProductPolicyRequest(server string, params *VendorProductPolicyPar
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7687,9 +8359,11 @@ func NewVendorProductPolicyRequest(server string, params *VendorProductPolicyPar
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7703,9 +8377,11 @@ func NewVendorProductPolicyRequest(server string, params *VendorProductPolicyPar
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7774,9 +8450,11 @@ func NewVendorProductSurveyQuestionTemplatesRequest(server string, params *Vendo
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7790,9 +8468,11 @@ func NewVendorProductSurveyQuestionTemplatesRequest(server string, params *Vendo
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7806,9 +8486,11 @@ func NewVendorProductSurveyQuestionTemplatesRequest(server string, params *Vendo
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7822,9 +8504,11 @@ func NewVendorProductSurveyQuestionTemplatesRequest(server string, params *Vendo
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -7994,13 +8678,8 @@ func NewCreateMeasurementStudiesSurveyRequestWithBody(server string, params *Cre
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -8008,7 +8687,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -8038,179 +8724,179 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// CheckDSPAudienceResearchEligibilityWithBodyWithResponse request with any body
-	CheckDSPAudienceResearchEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPAudienceResearchEligibilityResp, error)
+	CheckDSPAudienceResearchEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader) (*CheckDSPAudienceResearchEligibilityResp, error)
 
-	CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPAudienceResearchEligibilityResp, error)
+	CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*CheckDSPAudienceResearchEligibilityResp, error)
 
 	// CheckDSPBrandLiftEligibilityWithBodyWithResponse request with any body
-	CheckDSPBrandLiftEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPBrandLiftEligibilityResp, error)
+	CheckDSPBrandLiftEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader) (*CheckDSPBrandLiftEligibilityResp, error)
 
-	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPBrandLiftEligibilityResp, error)
+	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody) (*CheckDSPBrandLiftEligibilityResp, error)
 
-	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPBrandLiftEligibilityResp, error)
+	CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*CheckDSPBrandLiftEligibilityResp, error)
 
 	// CheckDSPCreativeTestingEligibilityWithBodyWithResponse request with any body
-	CheckDSPCreativeTestingEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPCreativeTestingEligibilityResp, error)
+	CheckDSPCreativeTestingEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader) (*CheckDSPCreativeTestingEligibilityResp, error)
 
-	CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPCreativeTestingEligibilityResp, error)
+	CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*CheckDSPCreativeTestingEligibilityResp, error)
 
 	// CheckDSPOmnichannelMetricsEligibilityWithBodyWithResponse request with any body
-	CheckDSPOmnichannelMetricsEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPOmnichannelMetricsEligibilityResp, error)
+	CheckDSPOmnichannelMetricsEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader) (*CheckDSPOmnichannelMetricsEligibilityResp, error)
 
-	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPOmnichannelMetricsEligibilityResp, error)
+	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*CheckDSPOmnichannelMetricsEligibilityResp, error)
 
-	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPOmnichannelMetricsEligibilityResp, error)
+	CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*CheckDSPOmnichannelMetricsEligibilityResp, error)
 
 	// GetDSPAudienceResearchStudiesWithResponse request
-	GetDSPAudienceResearchStudiesWithResponse(ctx context.Context, params *GetDSPAudienceResearchStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPAudienceResearchStudiesResp, error)
+	GetDSPAudienceResearchStudiesWithResponse(ctx context.Context, params *GetDSPAudienceResearchStudiesParams) (*GetDSPAudienceResearchStudiesResp, error)
 
 	// CreateDSPAudienceResearchStudyWithBodyWithResponse request with any body
-	CreateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPAudienceResearchStudyResp, error)
+	CreateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*CreateDSPAudienceResearchStudyResp, error)
 
-	CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPAudienceResearchStudyResp, error)
+	CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPAudienceResearchStudyResp, error)
 
 	// UpdateDSPAudienceResearchStudyWithBodyWithResponse request with any body
-	UpdateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPAudienceResearchStudyResp, error)
+	UpdateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*UpdateDSPAudienceResearchStudyResp, error)
 
-	UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPAudienceResearchStudyResp, error)
+	UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPAudienceResearchStudyResp, error)
 
 	// GetDSPAudienceResearchStudyResultWithResponse request
-	GetDSPAudienceResearchStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPAudienceResearchStudyResultResp, error)
+	GetDSPAudienceResearchStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams) (*GetDSPAudienceResearchStudyResultResp, error)
 
 	// GetDSPBrandLiftStudiesWithResponse request
-	GetDSPBrandLiftStudiesWithResponse(ctx context.Context, params *GetDSPBrandLiftStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPBrandLiftStudiesResp, error)
+	GetDSPBrandLiftStudiesWithResponse(ctx context.Context, params *GetDSPBrandLiftStudiesParams) (*GetDSPBrandLiftStudiesResp, error)
 
 	// CreateDSPBrandLiftStudiesWithBodyWithResponse request with any body
-	CreateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error)
+	CreateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*CreateDSPBrandLiftStudiesResp, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error)
 
-	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error)
+	CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error)
 
 	// UpdateDSPBrandLiftStudiesWithBodyWithResponse request with any body
-	UpdateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error)
+	UpdateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*UpdateDSPBrandLiftStudiesResp, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error)
 
-	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error)
+	UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error)
 
 	// GetDSPCreativeTestingStudiesWithResponse request
-	GetDSPCreativeTestingStudiesWithResponse(ctx context.Context, params *GetDSPCreativeTestingStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPCreativeTestingStudiesResp, error)
+	GetDSPCreativeTestingStudiesWithResponse(ctx context.Context, params *GetDSPCreativeTestingStudiesParams) (*GetDSPCreativeTestingStudiesResp, error)
 
 	// CreateDSPCreativeTestingStudyWithBodyWithResponse request with any body
-	CreateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPCreativeTestingStudyResp, error)
+	CreateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*CreateDSPCreativeTestingStudyResp, error)
 
-	CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPCreativeTestingStudyResp, error)
+	CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPCreativeTestingStudyResp, error)
 
 	// UpdateDSPCreativeTestingStudyWithBodyWithResponse request with any body
-	UpdateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPCreativeTestingStudyResp, error)
+	UpdateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*UpdateDSPCreativeTestingStudyResp, error)
 
-	UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPCreativeTestingStudyResp, error)
+	UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPCreativeTestingStudyResp, error)
 
 	// GetDSPCreativeTestingStudyResultWithResponse request
-	GetDSPCreativeTestingStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPCreativeTestingStudyResultResp, error)
+	GetDSPCreativeTestingStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams) (*GetDSPCreativeTestingStudyResultResp, error)
 
 	// GetDSPOmnichannelMetricsStudiesWithResponse request
-	GetDSPOmnichannelMetricsStudiesWithResponse(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPOmnichannelMetricsStudiesResp, error)
+	GetDSPOmnichannelMetricsStudiesWithResponse(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams) (*GetDSPOmnichannelMetricsStudiesResp, error)
 
 	// CreateDSPOmnichannelMetricsStudiesWithBodyWithResponse request with any body
-	CreateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPOmnichannelMetricsStudiesResp, error)
+	CreateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*CreateDSPOmnichannelMetricsStudiesResp, error)
 
-	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPOmnichannelMetricsStudiesResp, error)
+	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPOmnichannelMetricsStudiesResp, error)
 
-	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPOmnichannelMetricsStudiesResp, error)
+	CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*CreateDSPOmnichannelMetricsStudiesResp, error)
 
 	// UpdateDSPOmnichannelMetricsStudiesWithBodyWithResponse request with any body
-	UpdateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPOmnichannelMetricsStudiesResp, error)
+	UpdateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*UpdateDSPOmnichannelMetricsStudiesResp, error)
 
-	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPOmnichannelMetricsStudiesResp, error)
+	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPOmnichannelMetricsStudiesResp, error)
 
-	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPOmnichannelMetricsStudiesResp, error)
+	UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*UpdateDSPOmnichannelMetricsStudiesResp, error)
 
 	// GetDSPOmnichannelMetricsStudyResultWithResponse request
-	GetDSPOmnichannelMetricsStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPOmnichannelMetricsStudyResultResp, error)
+	GetDSPOmnichannelMetricsStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams) (*GetDSPOmnichannelMetricsStudyResultResp, error)
 
 	// CheckPlanningEligibilityWithBodyWithResponse request with any body
-	CheckPlanningEligibilityWithBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckPlanningEligibilityResp, error)
+	CheckPlanningEligibilityWithBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader) (*CheckPlanningEligibilityResp, error)
 
-	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckPlanningEligibilityResp, error)
+	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*CheckPlanningEligibilityResp, error)
 
-	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckPlanningEligibilityResp, error)
+	CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*CheckPlanningEligibilityResp, error)
 
 	// CancelMeasurementStudiesWithResponse request
-	CancelMeasurementStudiesWithResponse(ctx context.Context, params *CancelMeasurementStudiesParams, reqEditors ...RequestEditorFn) (*CancelMeasurementStudiesResp, error)
+	CancelMeasurementStudiesWithResponse(ctx context.Context, params *CancelMeasurementStudiesParams) (*CancelMeasurementStudiesResp, error)
 
 	// GetStudiesWithResponse request
-	GetStudiesWithResponse(ctx context.Context, params *GetStudiesParams, reqEditors ...RequestEditorFn) (*GetStudiesResp, error)
+	GetStudiesWithResponse(ctx context.Context, params *GetStudiesParams) (*GetStudiesResp, error)
 
 	// GetDSPBrandLiftStudyResultWithResponse request
-	GetDSPBrandLiftStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPBrandLiftStudyResultResp, error)
+	GetDSPBrandLiftStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams) (*GetDSPBrandLiftStudyResultResp, error)
 
 	// GetSurveysWithResponse request
-	GetSurveysWithResponse(ctx context.Context, params *GetSurveysParams, reqEditors ...RequestEditorFn) (*GetSurveysResp, error)
+	GetSurveysWithResponse(ctx context.Context, params *GetSurveysParams) (*GetSurveysResp, error)
 
 	// CreateSurveysWithBodyWithResponse request with any body
-	CreateSurveysWithBodyWithResponse(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error)
+	CreateSurveysWithBodyWithResponse(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader) (*CreateSurveysResp, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error)
+	CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*CreateSurveysResp, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error)
+	CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*CreateSurveysResp, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error)
+	CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateSurveysResp, error)
 
-	CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error)
+	CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*CreateSurveysResp, error)
 
 	// UpdateSurveysWithBodyWithResponse request with any body
-	UpdateSurveysWithBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error)
+	UpdateSurveysWithBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader) (*UpdateSurveysResp, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error)
+	UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*UpdateSurveysResp, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error)
+	UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*UpdateSurveysResp, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error)
+	UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateSurveysResp, error)
 
-	UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error)
+	UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*UpdateSurveysResp, error)
 
 	// GetCuratedStudyResultWithResponse request
-	GetCuratedStudyResultWithResponse(ctx context.Context, studyId string, params *GetCuratedStudyResultParams, reqEditors ...RequestEditorFn) (*GetCuratedStudyResultResp, error)
+	GetCuratedStudyResultWithResponse(ctx context.Context, studyId string, params *GetCuratedStudyResultParams) (*GetCuratedStudyResultResp, error)
 
 	// VendorProductWithBodyWithResponse request with any body
-	VendorProductWithBodyWithResponse(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*VendorProductResp, error)
+	VendorProductWithBodyWithResponse(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader) (*VendorProductResp, error)
 
-	VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*VendorProductResp, error)
+	VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody) (*VendorProductResp, error)
 
-	VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*VendorProductResp, error)
+	VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody) (*VendorProductResp, error)
 
 	// OmnichannelMetricsBrandSearchWithBodyWithResponse request with any body
-	OmnichannelMetricsBrandSearchWithBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*OmnichannelMetricsBrandSearchResp, error)
+	OmnichannelMetricsBrandSearchWithBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader) (*OmnichannelMetricsBrandSearchResp, error)
 
-	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*OmnichannelMetricsBrandSearchResp, error)
+	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody) (*OmnichannelMetricsBrandSearchResp, error)
 
-	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*OmnichannelMetricsBrandSearchResp, error)
+	OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody) (*OmnichannelMetricsBrandSearchResp, error)
 
 	// VendorProductPolicyWithResponse request
-	VendorProductPolicyWithResponse(ctx context.Context, params *VendorProductPolicyParams, reqEditors ...RequestEditorFn) (*VendorProductPolicyResp, error)
+	VendorProductPolicyWithResponse(ctx context.Context, params *VendorProductPolicyParams) (*VendorProductPolicyResp, error)
 
 	// VendorProductSurveyQuestionTemplatesWithResponse request
-	VendorProductSurveyQuestionTemplatesWithResponse(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams, reqEditors ...RequestEditorFn) (*VendorProductSurveyQuestionTemplatesResp, error)
+	VendorProductSurveyQuestionTemplatesWithResponse(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams) (*VendorProductSurveyQuestionTemplatesResp, error)
 
 	// UpdateMeasurementStudiesBrandLiftWithBodyWithResponse request with any body
-	UpdateMeasurementStudiesBrandLiftWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMeasurementStudiesBrandLiftResp, error)
+	UpdateMeasurementStudiesBrandLiftWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader) (*UpdateMeasurementStudiesBrandLiftResp, error)
 
-	UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMeasurementStudiesBrandLiftResp, error)
+	UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody) (*UpdateMeasurementStudiesBrandLiftResp, error)
 
 	// CreateMeasurementStudiesSurveyWithBodyWithResponse request with any body
-	CreateMeasurementStudiesSurveyWithBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMeasurementStudiesSurveyResp, error)
+	CreateMeasurementStudiesSurveyWithBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader) (*CreateMeasurementStudiesSurveyResp, error)
 
-	CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMeasurementStudiesSurveyResp, error)
+	CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody) (*CreateMeasurementStudiesSurveyResp, error)
 }
 
 type CheckDSPAudienceResearchEligibilityResp struct {
@@ -9437,16 +10123,16 @@ func (r CreateMeasurementStudiesSurveyResp) StatusCode() int {
 }
 
 // CheckDSPAudienceResearchEligibilityWithBodyWithResponse request with arbitrary body returning *CheckDSPAudienceResearchEligibilityResp
-func (c *ClientWithResponses) CheckDSPAudienceResearchEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPAudienceResearchEligibilityResp, error) {
-	rsp, err := c.CheckDSPAudienceResearchEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPAudienceResearchEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, contentType string, body io.Reader) (*CheckDSPAudienceResearchEligibilityResp, error) {
+	rsp, err := c.CheckDSPAudienceResearchEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckDSPAudienceResearchEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPAudienceResearchEligibilityResp, error) {
-	rsp, err := c.CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPAudienceResearchEligibilityParams, body CheckDSPAudienceResearchEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*CheckDSPAudienceResearchEligibilityResp, error) {
+	rsp, err := c.CheckDSPAudienceResearchEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9454,24 +10140,24 @@ func (c *ClientWithResponses) CheckDSPAudienceResearchEligibilityWithApplication
 }
 
 // CheckDSPBrandLiftEligibilityWithBodyWithResponse request with arbitrary body returning *CheckDSPBrandLiftEligibilityResp
-func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPBrandLiftEligibilityResp, error) {
-	rsp, err := c.CheckDSPBrandLiftEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, contentType string, body io.Reader) (*CheckDSPBrandLiftEligibilityResp, error) {
+	rsp, err := c.CheckDSPBrandLiftEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckDSPBrandLiftEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPBrandLiftEligibilityResp, error) {
-	rsp, err := c.CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV1PlusJSONRequestBody) (*CheckDSPBrandLiftEligibilityResp, error) {
+	rsp, err := c.CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckDSPBrandLiftEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPBrandLiftEligibilityResp, error) {
-	rsp, err := c.CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPBrandLiftEligibilityParams, body CheckDSPBrandLiftEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*CheckDSPBrandLiftEligibilityResp, error) {
+	rsp, err := c.CheckDSPBrandLiftEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9479,16 +10165,16 @@ func (c *ClientWithResponses) CheckDSPBrandLiftEligibilityWithApplicationVndMeas
 }
 
 // CheckDSPCreativeTestingEligibilityWithBodyWithResponse request with arbitrary body returning *CheckDSPCreativeTestingEligibilityResp
-func (c *ClientWithResponses) CheckDSPCreativeTestingEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPCreativeTestingEligibilityResp, error) {
-	rsp, err := c.CheckDSPCreativeTestingEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPCreativeTestingEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, contentType string, body io.Reader) (*CheckDSPCreativeTestingEligibilityResp, error) {
+	rsp, err := c.CheckDSPCreativeTestingEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckDSPCreativeTestingEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPCreativeTestingEligibilityResp, error) {
-	rsp, err := c.CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPCreativeTestingEligibilityParams, body CheckDSPCreativeTestingEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*CheckDSPCreativeTestingEligibilityResp, error) {
+	rsp, err := c.CheckDSPCreativeTestingEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9496,24 +10182,24 @@ func (c *ClientWithResponses) CheckDSPCreativeTestingEligibilityWithApplicationV
 }
 
 // CheckDSPOmnichannelMetricsEligibilityWithBodyWithResponse request with arbitrary body returning *CheckDSPOmnichannelMetricsEligibilityResp
-func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckDSPOmnichannelMetricsEligibilityResp, error) {
-	rsp, err := c.CheckDSPOmnichannelMetricsEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, contentType string, body io.Reader) (*CheckDSPOmnichannelMetricsEligibilityResp, error) {
+	rsp, err := c.CheckDSPOmnichannelMetricsEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckDSPOmnichannelMetricsEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPOmnichannelMetricsEligibilityResp, error) {
-	rsp, err := c.CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV12PlusJSONRequestBody) (*CheckDSPOmnichannelMetricsEligibilityResp, error) {
+	rsp, err := c.CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckDSPOmnichannelMetricsEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckDSPOmnichannelMetricsEligibilityResp, error) {
-	rsp, err := c.CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckDSPOmnichannelMetricsEligibilityParams, body CheckDSPOmnichannelMetricsEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*CheckDSPOmnichannelMetricsEligibilityResp, error) {
+	rsp, err := c.CheckDSPOmnichannelMetricsEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9521,8 +10207,8 @@ func (c *ClientWithResponses) CheckDSPOmnichannelMetricsEligibilityWithApplicati
 }
 
 // GetDSPAudienceResearchStudiesWithResponse request returning *GetDSPAudienceResearchStudiesResp
-func (c *ClientWithResponses) GetDSPAudienceResearchStudiesWithResponse(ctx context.Context, params *GetDSPAudienceResearchStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPAudienceResearchStudiesResp, error) {
-	rsp, err := c.GetDSPAudienceResearchStudies(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPAudienceResearchStudiesWithResponse(ctx context.Context, params *GetDSPAudienceResearchStudiesParams) (*GetDSPAudienceResearchStudiesResp, error) {
+	rsp, err := c.GetDSPAudienceResearchStudies(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9530,16 +10216,16 @@ func (c *ClientWithResponses) GetDSPAudienceResearchStudiesWithResponse(ctx cont
 }
 
 // CreateDSPAudienceResearchStudyWithBodyWithResponse request with arbitrary body returning *CreateDSPAudienceResearchStudyResp
-func (c *ClientWithResponses) CreateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPAudienceResearchStudyResp, error) {
-	rsp, err := c.CreateDSPAudienceResearchStudyWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*CreateDSPAudienceResearchStudyResp, error) {
+	rsp, err := c.CreateDSPAudienceResearchStudyWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPAudienceResearchStudyResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPAudienceResearchStudyResp, error) {
-	rsp, err := c.CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPAudienceResearchStudyParams, body CreateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPAudienceResearchStudyResp, error) {
+	rsp, err := c.CreateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9547,16 +10233,16 @@ func (c *ClientWithResponses) CreateDSPAudienceResearchStudyWithApplicationVndSt
 }
 
 // UpdateDSPAudienceResearchStudyWithBodyWithResponse request with arbitrary body returning *UpdateDSPAudienceResearchStudyResp
-func (c *ClientWithResponses) UpdateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPAudienceResearchStudyResp, error) {
-	rsp, err := c.UpdateDSPAudienceResearchStudyWithBody(ctx, studyId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPAudienceResearchStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, contentType string, body io.Reader) (*UpdateDSPAudienceResearchStudyResp, error) {
+	rsp, err := c.UpdateDSPAudienceResearchStudyWithBody(ctx, studyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPAudienceResearchStudyResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPAudienceResearchStudyResp, error) {
-	rsp, err := c.UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, studyId, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPAudienceResearchStudyParams, body UpdateDSPAudienceResearchStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPAudienceResearchStudyResp, error) {
+	rsp, err := c.UpdateDSPAudienceResearchStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, studyId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9564,8 +10250,8 @@ func (c *ClientWithResponses) UpdateDSPAudienceResearchStudyWithApplicationVndSt
 }
 
 // GetDSPAudienceResearchStudyResultWithResponse request returning *GetDSPAudienceResearchStudyResultResp
-func (c *ClientWithResponses) GetDSPAudienceResearchStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPAudienceResearchStudyResultResp, error) {
-	rsp, err := c.GetDSPAudienceResearchStudyResult(ctx, studyId, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPAudienceResearchStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPAudienceResearchStudyResultParams) (*GetDSPAudienceResearchStudyResultResp, error) {
+	rsp, err := c.GetDSPAudienceResearchStudyResult(ctx, studyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9573,8 +10259,8 @@ func (c *ClientWithResponses) GetDSPAudienceResearchStudyResultWithResponse(ctx 
 }
 
 // GetDSPBrandLiftStudiesWithResponse request returning *GetDSPBrandLiftStudiesResp
-func (c *ClientWithResponses) GetDSPBrandLiftStudiesWithResponse(ctx context.Context, params *GetDSPBrandLiftStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.GetDSPBrandLiftStudies(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPBrandLiftStudiesWithResponse(ctx context.Context, params *GetDSPBrandLiftStudiesParams) (*GetDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.GetDSPBrandLiftStudies(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9582,40 +10268,40 @@ func (c *ClientWithResponses) GetDSPBrandLiftStudiesWithResponse(ctx context.Con
 }
 
 // CreateDSPBrandLiftStudiesWithBodyWithResponse request with arbitrary body returning *CreateDSPBrandLiftStudiesResp
-func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.CreateDSPBrandLiftStudiesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*CreateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.CreateDSPBrandLiftStudiesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPBrandLiftStudiesParams, body CreateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*CreateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.CreateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9623,40 +10309,40 @@ func (c *ClientWithResponses) CreateDSPBrandLiftStudiesWithApplicationVndStudyma
 }
 
 // UpdateDSPBrandLiftStudiesWithBodyWithResponse request with arbitrary body returning *UpdateDSPBrandLiftStudiesResp
-func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.UpdateDSPBrandLiftStudiesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, contentType string, body io.Reader) (*UpdateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.UpdateDSPBrandLiftStudiesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV1PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV11PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPBrandLiftStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPBrandLiftStudiesResp, error) {
-	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPBrandLiftStudiesParams, body UpdateDSPBrandLiftStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*UpdateDSPBrandLiftStudiesResp, error) {
+	rsp, err := c.UpdateDSPBrandLiftStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9664,8 +10350,8 @@ func (c *ClientWithResponses) UpdateDSPBrandLiftStudiesWithApplicationVndStudyma
 }
 
 // GetDSPCreativeTestingStudiesWithResponse request returning *GetDSPCreativeTestingStudiesResp
-func (c *ClientWithResponses) GetDSPCreativeTestingStudiesWithResponse(ctx context.Context, params *GetDSPCreativeTestingStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPCreativeTestingStudiesResp, error) {
-	rsp, err := c.GetDSPCreativeTestingStudies(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPCreativeTestingStudiesWithResponse(ctx context.Context, params *GetDSPCreativeTestingStudiesParams) (*GetDSPCreativeTestingStudiesResp, error) {
+	rsp, err := c.GetDSPCreativeTestingStudies(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9673,16 +10359,16 @@ func (c *ClientWithResponses) GetDSPCreativeTestingStudiesWithResponse(ctx conte
 }
 
 // CreateDSPCreativeTestingStudyWithBodyWithResponse request with arbitrary body returning *CreateDSPCreativeTestingStudyResp
-func (c *ClientWithResponses) CreateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPCreativeTestingStudyResp, error) {
-	rsp, err := c.CreateDSPCreativeTestingStudyWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*CreateDSPCreativeTestingStudyResp, error) {
+	rsp, err := c.CreateDSPCreativeTestingStudyWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPCreativeTestingStudyResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPCreativeTestingStudyResp, error) {
-	rsp, err := c.CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPCreativeTestingStudyParams, body CreateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPCreativeTestingStudyResp, error) {
+	rsp, err := c.CreateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9690,16 +10376,16 @@ func (c *ClientWithResponses) CreateDSPCreativeTestingStudyWithApplicationVndStu
 }
 
 // UpdateDSPCreativeTestingStudyWithBodyWithResponse request with arbitrary body returning *UpdateDSPCreativeTestingStudyResp
-func (c *ClientWithResponses) UpdateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPCreativeTestingStudyResp, error) {
-	rsp, err := c.UpdateDSPCreativeTestingStudyWithBody(ctx, studyId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPCreativeTestingStudyWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, contentType string, body io.Reader) (*UpdateDSPCreativeTestingStudyResp, error) {
+	rsp, err := c.UpdateDSPCreativeTestingStudyWithBody(ctx, studyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPCreativeTestingStudyResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPCreativeTestingStudyResp, error) {
-	rsp, err := c.UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, studyId, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateDSPCreativeTestingStudyParams, body UpdateDSPCreativeTestingStudyApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPCreativeTestingStudyResp, error) {
+	rsp, err := c.UpdateDSPCreativeTestingStudyWithApplicationVndStudymanagementV12PlusJSONBody(ctx, studyId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9707,8 +10393,8 @@ func (c *ClientWithResponses) UpdateDSPCreativeTestingStudyWithApplicationVndStu
 }
 
 // GetDSPCreativeTestingStudyResultWithResponse request returning *GetDSPCreativeTestingStudyResultResp
-func (c *ClientWithResponses) GetDSPCreativeTestingStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPCreativeTestingStudyResultResp, error) {
-	rsp, err := c.GetDSPCreativeTestingStudyResult(ctx, studyId, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPCreativeTestingStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPCreativeTestingStudyResultParams) (*GetDSPCreativeTestingStudyResultResp, error) {
+	rsp, err := c.GetDSPCreativeTestingStudyResult(ctx, studyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9716,8 +10402,8 @@ func (c *ClientWithResponses) GetDSPCreativeTestingStudyResultWithResponse(ctx c
 }
 
 // GetDSPOmnichannelMetricsStudiesWithResponse request returning *GetDSPOmnichannelMetricsStudiesResp
-func (c *ClientWithResponses) GetDSPOmnichannelMetricsStudiesWithResponse(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams, reqEditors ...RequestEditorFn) (*GetDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.GetDSPOmnichannelMetricsStudies(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPOmnichannelMetricsStudiesWithResponse(ctx context.Context, params *GetDSPOmnichannelMetricsStudiesParams) (*GetDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.GetDSPOmnichannelMetricsStudies(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9725,24 +10411,24 @@ func (c *ClientWithResponses) GetDSPOmnichannelMetricsStudiesWithResponse(ctx co
 }
 
 // CreateDSPOmnichannelMetricsStudiesWithBodyWithResponse request with arbitrary body returning *CreateDSPOmnichannelMetricsStudiesResp
-func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.CreateDSPOmnichannelMetricsStudiesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*CreateDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.CreateDSPOmnichannelMetricsStudiesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPOmnichannelMetricsStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDSPOmnichannelMetricsStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateDSPOmnichannelMetricsStudiesParams, body CreateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*CreateDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.CreateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9750,24 +10436,24 @@ func (c *ClientWithResponses) CreateDSPOmnichannelMetricsStudiesWithApplicationV
 }
 
 // UpdateDSPOmnichannelMetricsStudiesWithBodyWithResponse request with arbitrary body returning *UpdateDSPOmnichannelMetricsStudiesResp
-func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.UpdateDSPOmnichannelMetricsStudiesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, contentType string, body io.Reader) (*UpdateDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.UpdateDSPOmnichannelMetricsStudiesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPOmnichannelMetricsStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDSPOmnichannelMetricsStudiesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDSPOmnichannelMetricsStudiesResp, error) {
-	rsp, err := c.UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDSPOmnichannelMetricsStudiesParams, body UpdateDSPOmnichannelMetricsStudiesApplicationVndStudymanagementV13PlusJSONRequestBody) (*UpdateDSPOmnichannelMetricsStudiesResp, error) {
+	rsp, err := c.UpdateDSPOmnichannelMetricsStudiesWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9775,8 +10461,8 @@ func (c *ClientWithResponses) UpdateDSPOmnichannelMetricsStudiesWithApplicationV
 }
 
 // GetDSPOmnichannelMetricsStudyResultWithResponse request returning *GetDSPOmnichannelMetricsStudyResultResp
-func (c *ClientWithResponses) GetDSPOmnichannelMetricsStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPOmnichannelMetricsStudyResultResp, error) {
-	rsp, err := c.GetDSPOmnichannelMetricsStudyResult(ctx, studyId, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPOmnichannelMetricsStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPOmnichannelMetricsStudyResultParams) (*GetDSPOmnichannelMetricsStudyResultResp, error) {
+	rsp, err := c.GetDSPOmnichannelMetricsStudyResult(ctx, studyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9784,24 +10470,24 @@ func (c *ClientWithResponses) GetDSPOmnichannelMetricsStudyResultWithResponse(ct
 }
 
 // CheckPlanningEligibilityWithBodyWithResponse request with arbitrary body returning *CheckPlanningEligibilityResp
-func (c *ClientWithResponses) CheckPlanningEligibilityWithBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CheckPlanningEligibilityResp, error) {
-	rsp, err := c.CheckPlanningEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CheckPlanningEligibilityWithBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, contentType string, body io.Reader) (*CheckPlanningEligibilityResp, error) {
+	rsp, err := c.CheckPlanningEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckPlanningEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckPlanningEligibilityResp, error) {
-	rsp, err := c.CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV11PlusJSONRequestBody) (*CheckPlanningEligibilityResp, error) {
+	rsp, err := c.CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCheckPlanningEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CheckPlanningEligibilityResp, error) {
-	rsp, err := c.CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBodyWithResponse(ctx context.Context, params *CheckPlanningEligibilityParams, body CheckPlanningEligibilityApplicationVndMeasurementeligibilityV13PlusJSONRequestBody) (*CheckPlanningEligibilityResp, error) {
+	rsp, err := c.CheckPlanningEligibilityWithApplicationVndMeasurementeligibilityV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9809,8 +10495,8 @@ func (c *ClientWithResponses) CheckPlanningEligibilityWithApplicationVndMeasurem
 }
 
 // CancelMeasurementStudiesWithResponse request returning *CancelMeasurementStudiesResp
-func (c *ClientWithResponses) CancelMeasurementStudiesWithResponse(ctx context.Context, params *CancelMeasurementStudiesParams, reqEditors ...RequestEditorFn) (*CancelMeasurementStudiesResp, error) {
-	rsp, err := c.CancelMeasurementStudies(ctx, params, reqEditors...)
+func (c *ClientWithResponses) CancelMeasurementStudiesWithResponse(ctx context.Context, params *CancelMeasurementStudiesParams) (*CancelMeasurementStudiesResp, error) {
+	rsp, err := c.CancelMeasurementStudies(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9818,8 +10504,8 @@ func (c *ClientWithResponses) CancelMeasurementStudiesWithResponse(ctx context.C
 }
 
 // GetStudiesWithResponse request returning *GetStudiesResp
-func (c *ClientWithResponses) GetStudiesWithResponse(ctx context.Context, params *GetStudiesParams, reqEditors ...RequestEditorFn) (*GetStudiesResp, error) {
-	rsp, err := c.GetStudies(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetStudiesWithResponse(ctx context.Context, params *GetStudiesParams) (*GetStudiesResp, error) {
+	rsp, err := c.GetStudies(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9827,8 +10513,8 @@ func (c *ClientWithResponses) GetStudiesWithResponse(ctx context.Context, params
 }
 
 // GetDSPBrandLiftStudyResultWithResponse request returning *GetDSPBrandLiftStudyResultResp
-func (c *ClientWithResponses) GetDSPBrandLiftStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams, reqEditors ...RequestEditorFn) (*GetDSPBrandLiftStudyResultResp, error) {
-	rsp, err := c.GetDSPBrandLiftStudyResult(ctx, studyId, params, reqEditors...)
+func (c *ClientWithResponses) GetDSPBrandLiftStudyResultWithResponse(ctx context.Context, studyId string, params *GetDSPBrandLiftStudyResultParams) (*GetDSPBrandLiftStudyResultResp, error) {
+	rsp, err := c.GetDSPBrandLiftStudyResult(ctx, studyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9836,8 +10522,8 @@ func (c *ClientWithResponses) GetDSPBrandLiftStudyResultWithResponse(ctx context
 }
 
 // GetSurveysWithResponse request returning *GetSurveysResp
-func (c *ClientWithResponses) GetSurveysWithResponse(ctx context.Context, params *GetSurveysParams, reqEditors ...RequestEditorFn) (*GetSurveysResp, error) {
-	rsp, err := c.GetSurveys(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetSurveysWithResponse(ctx context.Context, params *GetSurveysParams) (*GetSurveysResp, error) {
+	rsp, err := c.GetSurveys(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9845,40 +10531,40 @@ func (c *ClientWithResponses) GetSurveysWithResponse(ctx context.Context, params
 }
 
 // CreateSurveysWithBodyWithResponse request with arbitrary body returning *CreateSurveysResp
-func (c *ClientWithResponses) CreateSurveysWithBodyWithResponse(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error) {
-	rsp, err := c.CreateSurveysWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSurveysWithBodyWithResponse(ctx context.Context, params *CreateSurveysParams, contentType string, body io.Reader) (*CreateSurveysResp, error) {
+	rsp, err := c.CreateSurveysWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error) {
-	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*CreateSurveysResp, error) {
+	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error) {
-	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*CreateSurveysResp, error) {
+	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error) {
-	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*CreateSurveysResp, error) {
+	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSurveysResp, error) {
-	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *CreateSurveysParams, body CreateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*CreateSurveysResp, error) {
+	rsp, err := c.CreateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9886,40 +10572,40 @@ func (c *ClientWithResponses) CreateSurveysWithApplicationVndStudymanagementV13P
 }
 
 // UpdateSurveysWithBodyWithResponse request with arbitrary body returning *UpdateSurveysResp
-func (c *ClientWithResponses) UpdateSurveysWithBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error) {
-	rsp, err := c.UpdateSurveysWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSurveysWithBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, contentType string, body io.Reader) (*UpdateSurveysResp, error) {
+	rsp, err := c.UpdateSurveysWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error) {
-	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV1PlusJSONRequestBody) (*UpdateSurveysResp, error) {
+	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error) {
-	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV11PlusJSONRequestBody) (*UpdateSurveysResp, error) {
+	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error) {
-	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV12PlusJSONRequestBody) (*UpdateSurveysResp, error) {
+	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateSurveysResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSurveysResp, error) {
-	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBodyWithResponse(ctx context.Context, params *UpdateSurveysParams, body UpdateSurveysApplicationVndStudymanagementV13PlusJSONRequestBody) (*UpdateSurveysResp, error) {
+	rsp, err := c.UpdateSurveysWithApplicationVndStudymanagementV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9927,8 +10613,8 @@ func (c *ClientWithResponses) UpdateSurveysWithApplicationVndStudymanagementV13P
 }
 
 // GetCuratedStudyResultWithResponse request returning *GetCuratedStudyResultResp
-func (c *ClientWithResponses) GetCuratedStudyResultWithResponse(ctx context.Context, studyId string, params *GetCuratedStudyResultParams, reqEditors ...RequestEditorFn) (*GetCuratedStudyResultResp, error) {
-	rsp, err := c.GetCuratedStudyResult(ctx, studyId, params, reqEditors...)
+func (c *ClientWithResponses) GetCuratedStudyResultWithResponse(ctx context.Context, studyId string, params *GetCuratedStudyResultParams) (*GetCuratedStudyResultResp, error) {
+	rsp, err := c.GetCuratedStudyResult(ctx, studyId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9936,24 +10622,24 @@ func (c *ClientWithResponses) GetCuratedStudyResultWithResponse(ctx context.Cont
 }
 
 // VendorProductWithBodyWithResponse request with arbitrary body returning *VendorProductResp
-func (c *ClientWithResponses) VendorProductWithBodyWithResponse(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*VendorProductResp, error) {
-	rsp, err := c.VendorProductWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) VendorProductWithBodyWithResponse(ctx context.Context, params *VendorProductParams, contentType string, body io.Reader) (*VendorProductResp, error) {
+	rsp, err := c.VendorProductWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseVendorProductResp(rsp)
 }
 
-func (c *ClientWithResponses) VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*VendorProductResp, error) {
-	rsp, err := c.VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV1PlusJSONRequestBody) (*VendorProductResp, error) {
+	rsp, err := c.VendorProductWithApplicationVndMeasurementvendorV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseVendorProductResp(rsp)
 }
 
-func (c *ClientWithResponses) VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*VendorProductResp, error) {
-	rsp, err := c.VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBodyWithResponse(ctx context.Context, params *VendorProductParams, body VendorProductApplicationVndMeasurementvendorV11PlusJSONRequestBody) (*VendorProductResp, error) {
+	rsp, err := c.VendorProductWithApplicationVndMeasurementvendorV11PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9961,24 +10647,24 @@ func (c *ClientWithResponses) VendorProductWithApplicationVndMeasurementvendorV1
 }
 
 // OmnichannelMetricsBrandSearchWithBodyWithResponse request with arbitrary body returning *OmnichannelMetricsBrandSearchResp
-func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*OmnichannelMetricsBrandSearchResp, error) {
-	rsp, err := c.OmnichannelMetricsBrandSearchWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, contentType string, body io.Reader) (*OmnichannelMetricsBrandSearchResp, error) {
+	rsp, err := c.OmnichannelMetricsBrandSearchWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseOmnichannelMetricsBrandSearchResp(rsp)
 }
 
-func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*OmnichannelMetricsBrandSearchResp, error) {
-	rsp, err := c.OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV12PlusJSONRequestBody) (*OmnichannelMetricsBrandSearchResp, error) {
+	rsp, err := c.OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV12PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseOmnichannelMetricsBrandSearchResp(rsp)
 }
 
-func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*OmnichannelMetricsBrandSearchResp, error) {
-	rsp, err := c.OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBodyWithResponse(ctx context.Context, params *OmnichannelMetricsBrandSearchParams, body OmnichannelMetricsBrandSearchApplicationVndOcmbrandsV13PlusJSONRequestBody) (*OmnichannelMetricsBrandSearchResp, error) {
+	rsp, err := c.OmnichannelMetricsBrandSearchWithApplicationVndOcmbrandsV13PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -9986,8 +10672,8 @@ func (c *ClientWithResponses) OmnichannelMetricsBrandSearchWithApplicationVndOcm
 }
 
 // VendorProductPolicyWithResponse request returning *VendorProductPolicyResp
-func (c *ClientWithResponses) VendorProductPolicyWithResponse(ctx context.Context, params *VendorProductPolicyParams, reqEditors ...RequestEditorFn) (*VendorProductPolicyResp, error) {
-	rsp, err := c.VendorProductPolicy(ctx, params, reqEditors...)
+func (c *ClientWithResponses) VendorProductPolicyWithResponse(ctx context.Context, params *VendorProductPolicyParams) (*VendorProductPolicyResp, error) {
+	rsp, err := c.VendorProductPolicy(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9995,8 +10681,8 @@ func (c *ClientWithResponses) VendorProductPolicyWithResponse(ctx context.Contex
 }
 
 // VendorProductSurveyQuestionTemplatesWithResponse request returning *VendorProductSurveyQuestionTemplatesResp
-func (c *ClientWithResponses) VendorProductSurveyQuestionTemplatesWithResponse(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams, reqEditors ...RequestEditorFn) (*VendorProductSurveyQuestionTemplatesResp, error) {
-	rsp, err := c.VendorProductSurveyQuestionTemplates(ctx, params, reqEditors...)
+func (c *ClientWithResponses) VendorProductSurveyQuestionTemplatesWithResponse(ctx context.Context, params *VendorProductSurveyQuestionTemplatesParams) (*VendorProductSurveyQuestionTemplatesResp, error) {
+	rsp, err := c.VendorProductSurveyQuestionTemplates(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -10004,16 +10690,16 @@ func (c *ClientWithResponses) VendorProductSurveyQuestionTemplatesWithResponse(c
 }
 
 // UpdateMeasurementStudiesBrandLiftWithBodyWithResponse request with arbitrary body returning *UpdateMeasurementStudiesBrandLiftResp
-func (c *ClientWithResponses) UpdateMeasurementStudiesBrandLiftWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMeasurementStudiesBrandLiftResp, error) {
-	rsp, err := c.UpdateMeasurementStudiesBrandLiftWithBody(ctx, studyId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateMeasurementStudiesBrandLiftWithBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, contentType string, body io.Reader) (*UpdateMeasurementStudiesBrandLiftResp, error) {
+	rsp, err := c.UpdateMeasurementStudiesBrandLiftWithBody(ctx, studyId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateMeasurementStudiesBrandLiftResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateMeasurementStudiesBrandLiftResp, error) {
-	rsp, err := c.UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(ctx, studyId, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBodyWithResponse(ctx context.Context, studyId string, params *UpdateMeasurementStudiesBrandLiftParams, body UpdateMeasurementStudiesBrandLiftApplicationVndMeasurementstudiesbrandliftV1PlusJSONRequestBody) (*UpdateMeasurementStudiesBrandLiftResp, error) {
+	rsp, err := c.UpdateMeasurementStudiesBrandLiftWithApplicationVndMeasurementstudiesbrandliftV1PlusJSONBody(ctx, studyId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -10021,16 +10707,16 @@ func (c *ClientWithResponses) UpdateMeasurementStudiesBrandLiftWithApplicationVn
 }
 
 // CreateMeasurementStudiesSurveyWithBodyWithResponse request with arbitrary body returning *CreateMeasurementStudiesSurveyResp
-func (c *ClientWithResponses) CreateMeasurementStudiesSurveyWithBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateMeasurementStudiesSurveyResp, error) {
-	rsp, err := c.CreateMeasurementStudiesSurveyWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateMeasurementStudiesSurveyWithBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, contentType string, body io.Reader) (*CreateMeasurementStudiesSurveyResp, error) {
+	rsp, err := c.CreateMeasurementStudiesSurveyWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateMeasurementStudiesSurveyResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateMeasurementStudiesSurveyResp, error) {
-	rsp, err := c.CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateMeasurementStudiesSurveyParams, body CreateMeasurementStudiesSurveyApplicationVndMeasurementstudiessurveyV1PlusJSONRequestBody) (*CreateMeasurementStudiesSurveyResp, error) {
+	rsp, err := c.CreateMeasurementStudiesSurveyWithApplicationVndMeasurementstudiessurveyV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

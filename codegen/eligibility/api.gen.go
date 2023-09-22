@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AcceptLanguage.
@@ -422,8 +423,11 @@ func (t *Check) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -447,6 +451,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -472,6 +483,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -493,79 +508,128 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ProductEligibilityWithBody request with any body
-	ProductEligibilityWithBody(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProductEligibilityWithBody(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ProductEligibility(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProductEligibility(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody) (*http.Response, error)
 
 	// ProgramEligibilityWithBody request with any body
-	ProgramEligibilityWithBody(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProgramEligibilityWithBody(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ProgramEligibility(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProgramEligibility(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody) (*http.Response, error)
 
-	ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBody(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBody(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) ProductEligibilityWithBody(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProductEligibilityWithBody(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewProductEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ProductEligibility(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProductEligibility(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody) (*http.Response, error) {
 	req, err := NewProductEligibilityRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ProgramEligibilityWithBody(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProgramEligibilityWithBody(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewProgramEligibilityRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ProgramEligibility(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProgramEligibility(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody) (*http.Response, error) {
 	req, err := NewProgramEligibilityRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBody(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBody(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewProgramEligibilityRequestWithApplicationVndProgrameligibilityV2PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewProductEligibilityRequest calls the generic ProductEligibility builder with application/json body
@@ -738,13 +802,8 @@ func NewProgramEligibilityRequestWithBody(server string, params *ProgramEligibil
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -752,7 +811,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -782,16 +848,16 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ProductEligibilityWithBodyWithResponse request with any body
-	ProductEligibilityWithBodyWithResponse(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProductEligibilityResp, error)
+	ProductEligibilityWithBodyWithResponse(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader) (*ProductEligibilityResp, error)
 
-	ProductEligibilityWithResponse(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*ProductEligibilityResp, error)
+	ProductEligibilityWithResponse(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody) (*ProductEligibilityResp, error)
 
 	// ProgramEligibilityWithBodyWithResponse request with any body
-	ProgramEligibilityWithBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProgramEligibilityResp, error)
+	ProgramEligibilityWithBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader) (*ProgramEligibilityResp, error)
 
-	ProgramEligibilityWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*ProgramEligibilityResp, error)
+	ProgramEligibilityWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody) (*ProgramEligibilityResp, error)
 
-	ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ProgramEligibilityResp, error)
+	ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody) (*ProgramEligibilityResp, error)
 }
 
 type ProductEligibilityResp struct {
@@ -852,16 +918,16 @@ func (r ProgramEligibilityResp) StatusCode() int {
 }
 
 // ProductEligibilityWithBodyWithResponse request with arbitrary body returning *ProductEligibilityResp
-func (c *ClientWithResponses) ProductEligibilityWithBodyWithResponse(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProductEligibilityResp, error) {
-	rsp, err := c.ProductEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ProductEligibilityWithBodyWithResponse(ctx context.Context, params *ProductEligibilityParams, contentType string, body io.Reader) (*ProductEligibilityResp, error) {
+	rsp, err := c.ProductEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseProductEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) ProductEligibilityWithResponse(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*ProductEligibilityResp, error) {
-	rsp, err := c.ProductEligibility(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ProductEligibilityWithResponse(ctx context.Context, params *ProductEligibilityParams, body ProductEligibilityJSONRequestBody) (*ProductEligibilityResp, error) {
+	rsp, err := c.ProductEligibility(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -869,24 +935,24 @@ func (c *ClientWithResponses) ProductEligibilityWithResponse(ctx context.Context
 }
 
 // ProgramEligibilityWithBodyWithResponse request with arbitrary body returning *ProgramEligibilityResp
-func (c *ClientWithResponses) ProgramEligibilityWithBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ProgramEligibilityResp, error) {
-	rsp, err := c.ProgramEligibilityWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ProgramEligibilityWithBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, contentType string, body io.Reader) (*ProgramEligibilityResp, error) {
+	rsp, err := c.ProgramEligibilityWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseProgramEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) ProgramEligibilityWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody, reqEditors ...RequestEditorFn) (*ProgramEligibilityResp, error) {
-	rsp, err := c.ProgramEligibility(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ProgramEligibilityWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityJSONRequestBody) (*ProgramEligibilityResp, error) {
+	rsp, err := c.ProgramEligibility(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseProgramEligibilityResp(rsp)
 }
 
-func (c *ClientWithResponses) ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*ProgramEligibilityResp, error) {
-	rsp, err := c.ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBodyWithResponse(ctx context.Context, params *ProgramEligibilityParams, body ProgramEligibilityApplicationVndProgrameligibilityV2PlusJSONRequestBody) (*ProgramEligibilityResp, error) {
+	rsp, err := c.ProgramEligibilityWithApplicationVndProgrameligibilityV2PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

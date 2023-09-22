@@ -11,11 +11,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 // Defines values for BudgetChangeType.
@@ -2248,8 +2249,11 @@ func (t *SDTargetExpressionV31) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -2273,6 +2277,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -2298,6 +2309,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -2319,576 +2334,897 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// DeleteBrandSafetyDenyList request
-	DeleteBrandSafetyDenyList(ctx context.Context, params *DeleteBrandSafetyDenyListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteBrandSafetyDenyList(ctx context.Context, params *DeleteBrandSafetyDenyListParams) (*http.Response, error)
 
 	// ListDomains request
-	ListDomains(ctx context.Context, params *ListDomainsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListDomains(ctx context.Context, params *ListDomainsParams) (*http.Response, error)
 
 	// CreateBrandSafetyDenyListDomainsWithBody request with any body
-	CreateBrandSafetyDenyListDomainsWithBody(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateBrandSafetyDenyListDomainsWithBody(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateBrandSafetyDenyListDomains(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateBrandSafetyDenyListDomains(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody) (*http.Response, error)
 
 	// ListRequestStatus request
-	ListRequestStatus(ctx context.Context, params *ListRequestStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListRequestStatus(ctx context.Context, params *ListRequestStatusParams) (*http.Response, error)
 
 	// GetRequestResults request
-	GetRequestResults(ctx context.Context, requestId string, params *GetRequestResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRequestResults(ctx context.Context, requestId string, params *GetRequestResultsParams) (*http.Response, error)
 
 	// GetRequestStatus request
-	GetRequestStatus(ctx context.Context, requestId string, params *GetRequestStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRequestStatus(ctx context.Context, requestId string, params *GetRequestStatusParams) (*http.Response, error)
 
 	// GetSDBudgetRulesForAdvertiser request
-	GetSDBudgetRulesForAdvertiser(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSDBudgetRulesForAdvertiser(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams) (*http.Response, error)
 
 	// CreateBudgetRulesForSDCampaignsWithBody request with any body
-	CreateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateBudgetRulesForSDCampaigns(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateBudgetRulesForSDCampaigns(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody) (*http.Response, error)
 
 	// UpdateBudgetRulesForSDCampaignsWithBody request with any body
-	UpdateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateBudgetRulesForSDCampaigns(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateBudgetRulesForSDCampaigns(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody) (*http.Response, error)
 
 	// GetBudgetRuleByRuleIdForSDCampaigns request
-	GetBudgetRuleByRuleIdForSDCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBudgetRuleByRuleIdForSDCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams) (*http.Response, error)
 
 	// GetCampaignsAssociatedWithSDBudgetRule request
-	GetCampaignsAssociatedWithSDBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCampaignsAssociatedWithSDBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams) (*http.Response, error)
 
 	// SdCampaignsBudgetUsageWithBody request with any body
-	SdCampaignsBudgetUsageWithBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SdCampaignsBudgetUsageWithBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetSDBudgetRecommendationsWithBody request with any body
-	GetSDBudgetRecommendationsWithBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSDBudgetRecommendationsWithBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListAssociatedBudgetRulesForSDCampaigns request
-	ListAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams) (*http.Response, error)
 
 	// CreateAssociatedBudgetRulesForSDCampaignsWithBody request with any body
-	CreateAssociatedBudgetRulesForSDCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAssociatedBudgetRulesForSDCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody) (*http.Response, error)
 
 	// GetRuleBasedBudgetHistoryForSDCampaigns request
-	GetRuleBasedBudgetHistoryForSDCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetRuleBasedBudgetHistoryForSDCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams) (*http.Response, error)
 
 	// DisassociateAssociatedBudgetRuleForSDCampaigns request
-	DisassociateAssociatedBudgetRuleForSDCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DisassociateAssociatedBudgetRuleForSDCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams) (*http.Response, error)
 
 	// GetHeadlineRecommendationsForSDWithBody request with any body
-	GetHeadlineRecommendationsForSDWithBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeadlineRecommendationsForSDWithBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody) (*http.Response, error)
 
 	// GetSnapshotById request
-	GetSnapshotById(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSnapshotById(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams) (*http.Response, error)
 
 	// DownloadSnapshotById request
-	DownloadSnapshotById(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DownloadSnapshotById(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams) (*http.Response, error)
 
 	// GetTargetBidRecommendationsWithBody request with any body
-	GetTargetBidRecommendationsWithBody(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetBidRecommendationsWithBody(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*http.Response, error)
 
-	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*http.Response, error)
 
-	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*http.Response, error)
 
 	// GetTargetRecommendationsWithBody request with any body
-	GetTargetRecommendationsWithBody(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetRecommendationsWithBody(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody) (*http.Response, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*http.Response, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*http.Response, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*http.Response, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateSnapshotWithBody request with any body
-	CreateSnapshotWithBody(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSnapshotWithBody(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateSnapshot(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateSnapshot(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) DeleteBrandSafetyDenyList(ctx context.Context, params *DeleteBrandSafetyDenyListParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteBrandSafetyDenyList(ctx context.Context, params *DeleteBrandSafetyDenyListParams) (*http.Response, error) {
 	req, err := NewDeleteBrandSafetyDenyListRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListDomains(ctx context.Context, params *ListDomainsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListDomains(ctx context.Context, params *ListDomainsParams) (*http.Response, error) {
 	req, err := NewListDomainsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateBrandSafetyDenyListDomainsWithBody(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateBrandSafetyDenyListDomainsWithBody(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateBrandSafetyDenyListDomainsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateBrandSafetyDenyListDomains(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateBrandSafetyDenyListDomains(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateBrandSafetyDenyListDomainsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListRequestStatus(ctx context.Context, params *ListRequestStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListRequestStatus(ctx context.Context, params *ListRequestStatusParams) (*http.Response, error) {
 	req, err := NewListRequestStatusRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRequestResults(ctx context.Context, requestId string, params *GetRequestResultsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRequestResults(ctx context.Context, requestId string, params *GetRequestResultsParams) (*http.Response, error) {
 	req, err := NewGetRequestResultsRequest(c.Server, requestId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRequestStatus(ctx context.Context, requestId string, params *GetRequestStatusParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRequestStatus(ctx context.Context, requestId string, params *GetRequestStatusParams) (*http.Response, error) {
 	req, err := NewGetRequestStatusRequest(c.Server, requestId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSDBudgetRulesForAdvertiser(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSDBudgetRulesForAdvertiser(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams) (*http.Response, error) {
 	req, err := NewGetSDBudgetRulesForAdvertiserRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateBudgetRulesForSDCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateBudgetRulesForSDCampaigns(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateBudgetRulesForSDCampaigns(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateBudgetRulesForSDCampaignsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateBudgetRulesForSDCampaignsWithBody(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateBudgetRulesForSDCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateBudgetRulesForSDCampaigns(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateBudgetRulesForSDCampaigns(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateBudgetRulesForSDCampaignsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBudgetRuleByRuleIdForSDCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBudgetRuleByRuleIdForSDCampaigns(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams) (*http.Response, error) {
 	req, err := NewGetBudgetRuleByRuleIdForSDCampaignsRequest(c.Server, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCampaignsAssociatedWithSDBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCampaignsAssociatedWithSDBudgetRule(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams) (*http.Response, error) {
 	req, err := NewGetCampaignsAssociatedWithSDBudgetRuleRequest(c.Server, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SdCampaignsBudgetUsageWithBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SdCampaignsBudgetUsageWithBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSdCampaignsBudgetUsageRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSdCampaignsBudgetUsageRequestWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSDBudgetRecommendationsWithBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSDBudgetRecommendationsWithBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetSDBudgetRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetSDBudgetRecommendationsRequestWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams) (*http.Response, error) {
 	req, err := NewListAssociatedBudgetRulesForSDCampaignsRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAssociatedBudgetRulesForSDCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAssociatedBudgetRulesForSDCampaignsWithBody(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateAssociatedBudgetRulesForSDCampaignsRequestWithBody(c.Server, campaignId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAssociatedBudgetRulesForSDCampaigns(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateAssociatedBudgetRulesForSDCampaignsRequest(c.Server, campaignId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetRuleBasedBudgetHistoryForSDCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetRuleBasedBudgetHistoryForSDCampaigns(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams) (*http.Response, error) {
 	req, err := NewGetRuleBasedBudgetHistoryForSDCampaignsRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DisassociateAssociatedBudgetRuleForSDCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DisassociateAssociatedBudgetRuleForSDCampaigns(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams) (*http.Response, error) {
 	req, err := NewDisassociateAssociatedBudgetRuleForSDCampaignsRequest(c.Server, campaignId, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetHeadlineRecommendationsForSDWithBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeadlineRecommendationsForSDWithBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetHeadlineRecommendationsForSDRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetHeadlineRecommendationsForSDRequestWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSnapshotById(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSnapshotById(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams) (*http.Response, error) {
 	req, err := NewGetSnapshotByIdRequest(c.Server, snapshotId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DownloadSnapshotById(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DownloadSnapshotById(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams) (*http.Response, error) {
 	req, err := NewDownloadSnapshotByIdRequest(c.Server, snapshotId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetBidRecommendationsWithBody(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetBidRecommendationsWithBody(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetTargetBidRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetBidRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetBidRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetBidRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetRecommendationsWithBody(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetRecommendationsWithBody(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetTargetRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetRecommendationsRequestWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSnapshotWithBody(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSnapshotWithBody(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateSnapshotRequestWithBody(c.Server, recordType, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateSnapshot(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateSnapshot(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateSnapshotRequest(c.Server, recordType, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewDeleteBrandSafetyDenyListRequest generates requests for DeleteBrandSafetyDenyList
@@ -2970,9 +3306,11 @@ func NewListDomainsRequest(server string, params *ListDomainsParams) (*http.Requ
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -2986,9 +3324,11 @@ func NewListDomainsRequest(server string, params *ListDomainsParams) (*http.Requ
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -3175,9 +3515,11 @@ func NewGetRequestResultsRequest(server string, requestId string, params *GetReq
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -3191,9 +3533,11 @@ func NewGetRequestResultsRequest(server string, requestId string, params *GetReq
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -3318,9 +3662,11 @@ func NewGetSDBudgetRulesForAdvertiserRequest(server string, params *GetSDBudgetR
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -3332,9 +3678,11 @@ func NewGetSDBudgetRulesForAdvertiserRequest(server string, params *GetSDBudgetR
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -3588,9 +3936,11 @@ func NewGetCampaignsAssociatedWithSDBudgetRuleRequest(server string, budgetRuleI
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -3602,9 +3952,11 @@ func NewGetCampaignsAssociatedWithSDBudgetRuleRequest(server string, budgetRuleI
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -3927,9 +4279,11 @@ func NewGetRuleBasedBudgetHistoryForSDCampaignsRequest(server string, campaignId
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -3941,9 +4295,11 @@ func NewGetRuleBasedBudgetHistoryForSDCampaignsRequest(server string, campaignId
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -3953,9 +4309,11 @@ func NewGetRuleBasedBudgetHistoryForSDCampaignsRequest(server string, campaignId
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -3965,9 +4323,11 @@ func NewGetRuleBasedBudgetHistoryForSDCampaignsRequest(server string, campaignId
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -4410,9 +4770,11 @@ func NewGetTargetRecommendationsRequestWithBody(server string, params *GetTarget
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -4522,13 +4884,8 @@ func NewCreateSnapshotRequestWithBody(server string, recordType CreateSnapshotPa
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -4536,7 +4893,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -4566,105 +4930,105 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// DeleteBrandSafetyDenyListWithResponse request
-	DeleteBrandSafetyDenyListWithResponse(ctx context.Context, params *DeleteBrandSafetyDenyListParams, reqEditors ...RequestEditorFn) (*DeleteBrandSafetyDenyListResp, error)
+	DeleteBrandSafetyDenyListWithResponse(ctx context.Context, params *DeleteBrandSafetyDenyListParams) (*DeleteBrandSafetyDenyListResp, error)
 
 	// ListDomainsWithResponse request
-	ListDomainsWithResponse(ctx context.Context, params *ListDomainsParams, reqEditors ...RequestEditorFn) (*ListDomainsResp, error)
+	ListDomainsWithResponse(ctx context.Context, params *ListDomainsParams) (*ListDomainsResp, error)
 
 	// CreateBrandSafetyDenyListDomainsWithBodyWithResponse request with any body
-	CreateBrandSafetyDenyListDomainsWithBodyWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBrandSafetyDenyListDomainsResp, error)
+	CreateBrandSafetyDenyListDomainsWithBodyWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader) (*CreateBrandSafetyDenyListDomainsResp, error)
 
-	CreateBrandSafetyDenyListDomainsWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBrandSafetyDenyListDomainsResp, error)
+	CreateBrandSafetyDenyListDomainsWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody) (*CreateBrandSafetyDenyListDomainsResp, error)
 
 	// ListRequestStatusWithResponse request
-	ListRequestStatusWithResponse(ctx context.Context, params *ListRequestStatusParams, reqEditors ...RequestEditorFn) (*ListRequestStatusResp, error)
+	ListRequestStatusWithResponse(ctx context.Context, params *ListRequestStatusParams) (*ListRequestStatusResp, error)
 
 	// GetRequestResultsWithResponse request
-	GetRequestResultsWithResponse(ctx context.Context, requestId string, params *GetRequestResultsParams, reqEditors ...RequestEditorFn) (*GetRequestResultsResp, error)
+	GetRequestResultsWithResponse(ctx context.Context, requestId string, params *GetRequestResultsParams) (*GetRequestResultsResp, error)
 
 	// GetRequestStatusWithResponse request
-	GetRequestStatusWithResponse(ctx context.Context, requestId string, params *GetRequestStatusParams, reqEditors ...RequestEditorFn) (*GetRequestStatusResp, error)
+	GetRequestStatusWithResponse(ctx context.Context, requestId string, params *GetRequestStatusParams) (*GetRequestStatusResp, error)
 
 	// GetSDBudgetRulesForAdvertiserWithResponse request
-	GetSDBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*GetSDBudgetRulesForAdvertiserResp, error)
+	GetSDBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams) (*GetSDBudgetRulesForAdvertiserResp, error)
 
 	// CreateBudgetRulesForSDCampaignsWithBodyWithResponse request with any body
-	CreateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSDCampaignsResp, error)
+	CreateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*CreateBudgetRulesForSDCampaignsResp, error)
 
-	CreateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSDCampaignsResp, error)
+	CreateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody) (*CreateBudgetRulesForSDCampaignsResp, error)
 
 	// UpdateBudgetRulesForSDCampaignsWithBodyWithResponse request with any body
-	UpdateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSDCampaignsResp, error)
+	UpdateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*UpdateBudgetRulesForSDCampaignsResp, error)
 
-	UpdateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSDCampaignsResp, error)
+	UpdateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody) (*UpdateBudgetRulesForSDCampaignsResp, error)
 
 	// GetBudgetRuleByRuleIdForSDCampaignsWithResponse request
-	GetBudgetRuleByRuleIdForSDCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams, reqEditors ...RequestEditorFn) (*GetBudgetRuleByRuleIdForSDCampaignsResp, error)
+	GetBudgetRuleByRuleIdForSDCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams) (*GetBudgetRuleByRuleIdForSDCampaignsResp, error)
 
 	// GetCampaignsAssociatedWithSDBudgetRuleWithResponse request
-	GetCampaignsAssociatedWithSDBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams, reqEditors ...RequestEditorFn) (*GetCampaignsAssociatedWithSDBudgetRuleResp, error)
+	GetCampaignsAssociatedWithSDBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams) (*GetCampaignsAssociatedWithSDBudgetRuleResp, error)
 
 	// SdCampaignsBudgetUsageWithBodyWithResponse request with any body
-	SdCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SdCampaignsBudgetUsageResp, error)
+	SdCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader) (*SdCampaignsBudgetUsageResp, error)
 
-	SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SdCampaignsBudgetUsageResp, error)
+	SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody) (*SdCampaignsBudgetUsageResp, error)
 
 	// GetSDBudgetRecommendationsWithBodyWithResponse request with any body
-	GetSDBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetSDBudgetRecommendationsResp, error)
+	GetSDBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader) (*GetSDBudgetRecommendationsResp, error)
 
-	GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetSDBudgetRecommendationsResp, error)
+	GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody) (*GetSDBudgetRecommendationsResp, error)
 
 	// ListAssociatedBudgetRulesForSDCampaignsWithResponse request
-	ListAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams, reqEditors ...RequestEditorFn) (*ListAssociatedBudgetRulesForSDCampaignsResp, error)
+	ListAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams) (*ListAssociatedBudgetRulesForSDCampaignsResp, error)
 
 	// CreateAssociatedBudgetRulesForSDCampaignsWithBodyWithResponse request with any body
-	CreateAssociatedBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error)
+	CreateAssociatedBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error)
 
-	CreateAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error)
+	CreateAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error)
 
 	// GetRuleBasedBudgetHistoryForSDCampaignsWithResponse request
-	GetRuleBasedBudgetHistoryForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams, reqEditors ...RequestEditorFn) (*GetRuleBasedBudgetHistoryForSDCampaignsResp, error)
+	GetRuleBasedBudgetHistoryForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams) (*GetRuleBasedBudgetHistoryForSDCampaignsResp, error)
 
 	// DisassociateAssociatedBudgetRuleForSDCampaignsWithResponse request
-	DisassociateAssociatedBudgetRuleForSDCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams, reqEditors ...RequestEditorFn) (*DisassociateAssociatedBudgetRuleForSDCampaignsResp, error)
+	DisassociateAssociatedBudgetRuleForSDCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams) (*DisassociateAssociatedBudgetRuleForSDCampaignsResp, error)
 
 	// GetHeadlineRecommendationsForSDWithBodyWithResponse request with any body
-	GetHeadlineRecommendationsForSDWithBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetHeadlineRecommendationsForSDResp, error)
+	GetHeadlineRecommendationsForSDWithBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader) (*GetHeadlineRecommendationsForSDResp, error)
 
-	GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetHeadlineRecommendationsForSDResp, error)
+	GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody) (*GetHeadlineRecommendationsForSDResp, error)
 
 	// GetSnapshotByIdWithResponse request
-	GetSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams, reqEditors ...RequestEditorFn) (*GetSnapshotByIdResp, error)
+	GetSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams) (*GetSnapshotByIdResp, error)
 
 	// DownloadSnapshotByIdWithResponse request
-	DownloadSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams, reqEditors ...RequestEditorFn) (*DownloadSnapshotByIdResp, error)
+	DownloadSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams) (*DownloadSnapshotByIdResp, error)
 
 	// GetTargetBidRecommendationsWithBodyWithResponse request with any body
-	GetTargetBidRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error)
+	GetTargetBidRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader) (*GetTargetBidRecommendationsResp, error)
 
-	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error)
+	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*GetTargetBidRecommendationsResp, error)
 
-	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error)
+	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*GetTargetBidRecommendationsResp, error)
 
-	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error)
+	GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*GetTargetBidRecommendationsResp, error)
 
 	// GetTargetRecommendationsWithBodyWithResponse request with any body
-	GetTargetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error)
+	GetTargetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader) (*GetTargetRecommendationsResp, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody) (*GetTargetRecommendationsResp, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*GetTargetRecommendationsResp, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*GetTargetRecommendationsResp, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*GetTargetRecommendationsResp, error)
 
-	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error)
+	GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody) (*GetTargetRecommendationsResp, error)
 
 	// CreateSnapshotWithBodyWithResponse request with any body
-	CreateSnapshotWithBodyWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotResp, error)
+	CreateSnapshotWithBodyWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader) (*CreateSnapshotResp, error)
 
-	CreateSnapshotWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResp, error)
+	CreateSnapshotWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody) (*CreateSnapshotResp, error)
 }
 
 type DeleteBrandSafetyDenyListResp struct {
@@ -5314,8 +5678,8 @@ func (r CreateSnapshotResp) StatusCode() int {
 }
 
 // DeleteBrandSafetyDenyListWithResponse request returning *DeleteBrandSafetyDenyListResp
-func (c *ClientWithResponses) DeleteBrandSafetyDenyListWithResponse(ctx context.Context, params *DeleteBrandSafetyDenyListParams, reqEditors ...RequestEditorFn) (*DeleteBrandSafetyDenyListResp, error) {
-	rsp, err := c.DeleteBrandSafetyDenyList(ctx, params, reqEditors...)
+func (c *ClientWithResponses) DeleteBrandSafetyDenyListWithResponse(ctx context.Context, params *DeleteBrandSafetyDenyListParams) (*DeleteBrandSafetyDenyListResp, error) {
+	rsp, err := c.DeleteBrandSafetyDenyList(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5323,8 +5687,8 @@ func (c *ClientWithResponses) DeleteBrandSafetyDenyListWithResponse(ctx context.
 }
 
 // ListDomainsWithResponse request returning *ListDomainsResp
-func (c *ClientWithResponses) ListDomainsWithResponse(ctx context.Context, params *ListDomainsParams, reqEditors ...RequestEditorFn) (*ListDomainsResp, error) {
-	rsp, err := c.ListDomains(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListDomainsWithResponse(ctx context.Context, params *ListDomainsParams) (*ListDomainsResp, error) {
+	rsp, err := c.ListDomains(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5332,16 +5696,16 @@ func (c *ClientWithResponses) ListDomainsWithResponse(ctx context.Context, param
 }
 
 // CreateBrandSafetyDenyListDomainsWithBodyWithResponse request with arbitrary body returning *CreateBrandSafetyDenyListDomainsResp
-func (c *ClientWithResponses) CreateBrandSafetyDenyListDomainsWithBodyWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBrandSafetyDenyListDomainsResp, error) {
-	rsp, err := c.CreateBrandSafetyDenyListDomainsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateBrandSafetyDenyListDomainsWithBodyWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, contentType string, body io.Reader) (*CreateBrandSafetyDenyListDomainsResp, error) {
+	rsp, err := c.CreateBrandSafetyDenyListDomainsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateBrandSafetyDenyListDomainsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateBrandSafetyDenyListDomainsWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBrandSafetyDenyListDomainsResp, error) {
-	rsp, err := c.CreateBrandSafetyDenyListDomains(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateBrandSafetyDenyListDomainsWithResponse(ctx context.Context, params *CreateBrandSafetyDenyListDomainsParams, body CreateBrandSafetyDenyListDomainsJSONRequestBody) (*CreateBrandSafetyDenyListDomainsResp, error) {
+	rsp, err := c.CreateBrandSafetyDenyListDomains(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5349,8 +5713,8 @@ func (c *ClientWithResponses) CreateBrandSafetyDenyListDomainsWithResponse(ctx c
 }
 
 // ListRequestStatusWithResponse request returning *ListRequestStatusResp
-func (c *ClientWithResponses) ListRequestStatusWithResponse(ctx context.Context, params *ListRequestStatusParams, reqEditors ...RequestEditorFn) (*ListRequestStatusResp, error) {
-	rsp, err := c.ListRequestStatus(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListRequestStatusWithResponse(ctx context.Context, params *ListRequestStatusParams) (*ListRequestStatusResp, error) {
+	rsp, err := c.ListRequestStatus(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5358,8 +5722,8 @@ func (c *ClientWithResponses) ListRequestStatusWithResponse(ctx context.Context,
 }
 
 // GetRequestResultsWithResponse request returning *GetRequestResultsResp
-func (c *ClientWithResponses) GetRequestResultsWithResponse(ctx context.Context, requestId string, params *GetRequestResultsParams, reqEditors ...RequestEditorFn) (*GetRequestResultsResp, error) {
-	rsp, err := c.GetRequestResults(ctx, requestId, params, reqEditors...)
+func (c *ClientWithResponses) GetRequestResultsWithResponse(ctx context.Context, requestId string, params *GetRequestResultsParams) (*GetRequestResultsResp, error) {
+	rsp, err := c.GetRequestResults(ctx, requestId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5367,8 +5731,8 @@ func (c *ClientWithResponses) GetRequestResultsWithResponse(ctx context.Context,
 }
 
 // GetRequestStatusWithResponse request returning *GetRequestStatusResp
-func (c *ClientWithResponses) GetRequestStatusWithResponse(ctx context.Context, requestId string, params *GetRequestStatusParams, reqEditors ...RequestEditorFn) (*GetRequestStatusResp, error) {
-	rsp, err := c.GetRequestStatus(ctx, requestId, params, reqEditors...)
+func (c *ClientWithResponses) GetRequestStatusWithResponse(ctx context.Context, requestId string, params *GetRequestStatusParams) (*GetRequestStatusResp, error) {
+	rsp, err := c.GetRequestStatus(ctx, requestId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5376,8 +5740,8 @@ func (c *ClientWithResponses) GetRequestStatusWithResponse(ctx context.Context, 
 }
 
 // GetSDBudgetRulesForAdvertiserWithResponse request returning *GetSDBudgetRulesForAdvertiserResp
-func (c *ClientWithResponses) GetSDBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams, reqEditors ...RequestEditorFn) (*GetSDBudgetRulesForAdvertiserResp, error) {
-	rsp, err := c.GetSDBudgetRulesForAdvertiser(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetSDBudgetRulesForAdvertiserWithResponse(ctx context.Context, params *GetSDBudgetRulesForAdvertiserParams) (*GetSDBudgetRulesForAdvertiserResp, error) {
+	rsp, err := c.GetSDBudgetRulesForAdvertiser(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5385,16 +5749,16 @@ func (c *ClientWithResponses) GetSDBudgetRulesForAdvertiserWithResponse(ctx cont
 }
 
 // CreateBudgetRulesForSDCampaignsWithBodyWithResponse request with arbitrary body returning *CreateBudgetRulesForSDCampaignsResp
-func (c *ClientWithResponses) CreateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.CreateBudgetRulesForSDCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*CreateBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.CreateBudgetRulesForSDCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateBudgetRulesForSDCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.CreateBudgetRulesForSDCampaigns(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *CreateBudgetRulesForSDCampaignsParams, body CreateBudgetRulesForSDCampaignsJSONRequestBody) (*CreateBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.CreateBudgetRulesForSDCampaigns(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5402,16 +5766,16 @@ func (c *ClientWithResponses) CreateBudgetRulesForSDCampaignsWithResponse(ctx co
 }
 
 // UpdateBudgetRulesForSDCampaignsWithBodyWithResponse request with arbitrary body returning *UpdateBudgetRulesForSDCampaignsResp
-func (c *ClientWithResponses) UpdateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.UpdateBudgetRulesForSDCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*UpdateBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.UpdateBudgetRulesForSDCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateBudgetRulesForSDCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.UpdateBudgetRulesForSDCampaigns(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateBudgetRulesForSDCampaignsWithResponse(ctx context.Context, params *UpdateBudgetRulesForSDCampaignsParams, body UpdateBudgetRulesForSDCampaignsJSONRequestBody) (*UpdateBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.UpdateBudgetRulesForSDCampaigns(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5419,8 +5783,8 @@ func (c *ClientWithResponses) UpdateBudgetRulesForSDCampaignsWithResponse(ctx co
 }
 
 // GetBudgetRuleByRuleIdForSDCampaignsWithResponse request returning *GetBudgetRuleByRuleIdForSDCampaignsResp
-func (c *ClientWithResponses) GetBudgetRuleByRuleIdForSDCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams, reqEditors ...RequestEditorFn) (*GetBudgetRuleByRuleIdForSDCampaignsResp, error) {
-	rsp, err := c.GetBudgetRuleByRuleIdForSDCampaigns(ctx, budgetRuleId, params, reqEditors...)
+func (c *ClientWithResponses) GetBudgetRuleByRuleIdForSDCampaignsWithResponse(ctx context.Context, budgetRuleId string, params *GetBudgetRuleByRuleIdForSDCampaignsParams) (*GetBudgetRuleByRuleIdForSDCampaignsResp, error) {
+	rsp, err := c.GetBudgetRuleByRuleIdForSDCampaigns(ctx, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5428,8 +5792,8 @@ func (c *ClientWithResponses) GetBudgetRuleByRuleIdForSDCampaignsWithResponse(ct
 }
 
 // GetCampaignsAssociatedWithSDBudgetRuleWithResponse request returning *GetCampaignsAssociatedWithSDBudgetRuleResp
-func (c *ClientWithResponses) GetCampaignsAssociatedWithSDBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams, reqEditors ...RequestEditorFn) (*GetCampaignsAssociatedWithSDBudgetRuleResp, error) {
-	rsp, err := c.GetCampaignsAssociatedWithSDBudgetRule(ctx, budgetRuleId, params, reqEditors...)
+func (c *ClientWithResponses) GetCampaignsAssociatedWithSDBudgetRuleWithResponse(ctx context.Context, budgetRuleId string, params *GetCampaignsAssociatedWithSDBudgetRuleParams) (*GetCampaignsAssociatedWithSDBudgetRuleResp, error) {
+	rsp, err := c.GetCampaignsAssociatedWithSDBudgetRule(ctx, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5437,16 +5801,16 @@ func (c *ClientWithResponses) GetCampaignsAssociatedWithSDBudgetRuleWithResponse
 }
 
 // SdCampaignsBudgetUsageWithBodyWithResponse request with arbitrary body returning *SdCampaignsBudgetUsageResp
-func (c *ClientWithResponses) SdCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SdCampaignsBudgetUsageResp, error) {
-	rsp, err := c.SdCampaignsBudgetUsageWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SdCampaignsBudgetUsageWithBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, contentType string, body io.Reader) (*SdCampaignsBudgetUsageResp, error) {
+	rsp, err := c.SdCampaignsBudgetUsageWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSdCampaignsBudgetUsageResp(rsp)
 }
 
-func (c *ClientWithResponses) SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SdCampaignsBudgetUsageResp, error) {
-	rsp, err := c.SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBodyWithResponse(ctx context.Context, params *SdCampaignsBudgetUsageParams, body SdCampaignsBudgetUsageApplicationVndSdcampaignbudgetusageV1PlusJSONRequestBody) (*SdCampaignsBudgetUsageResp, error) {
+	rsp, err := c.SdCampaignsBudgetUsageWithApplicationVndSdcampaignbudgetusageV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5454,16 +5818,16 @@ func (c *ClientWithResponses) SdCampaignsBudgetUsageWithApplicationVndSdcampaign
 }
 
 // GetSDBudgetRecommendationsWithBodyWithResponse request with arbitrary body returning *GetSDBudgetRecommendationsResp
-func (c *ClientWithResponses) GetSDBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetSDBudgetRecommendationsResp, error) {
-	rsp, err := c.GetSDBudgetRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetSDBudgetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, contentType string, body io.Reader) (*GetSDBudgetRecommendationsResp, error) {
+	rsp, err := c.GetSDBudgetRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetSDBudgetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetSDBudgetRecommendationsResp, error) {
-	rsp, err := c.GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBodyWithResponse(ctx context.Context, params *GetSDBudgetRecommendationsParams, body GetSDBudgetRecommendationsApplicationVndSdbudgetrecommendationsV3PlusJSONRequestBody) (*GetSDBudgetRecommendationsResp, error) {
+	rsp, err := c.GetSDBudgetRecommendationsWithApplicationVndSdbudgetrecommendationsV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5471,8 +5835,8 @@ func (c *ClientWithResponses) GetSDBudgetRecommendationsWithApplicationVndSdbudg
 }
 
 // ListAssociatedBudgetRulesForSDCampaignsWithResponse request returning *ListAssociatedBudgetRulesForSDCampaignsResp
-func (c *ClientWithResponses) ListAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams, reqEditors ...RequestEditorFn) (*ListAssociatedBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.ListAssociatedBudgetRulesForSDCampaigns(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) ListAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *ListAssociatedBudgetRulesForSDCampaignsParams) (*ListAssociatedBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.ListAssociatedBudgetRulesForSDCampaigns(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5480,16 +5844,16 @@ func (c *ClientWithResponses) ListAssociatedBudgetRulesForSDCampaignsWithRespons
 }
 
 // CreateAssociatedBudgetRulesForSDCampaignsWithBodyWithResponse request with arbitrary body returning *CreateAssociatedBudgetRulesForSDCampaignsResp
-func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.CreateAssociatedBudgetRulesForSDCampaignsWithBody(ctx, campaignId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSDCampaignsWithBodyWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, contentType string, body io.Reader) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.CreateAssociatedBudgetRulesForSDCampaignsWithBody(ctx, campaignId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateAssociatedBudgetRulesForSDCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error) {
-	rsp, err := c.CreateAssociatedBudgetRulesForSDCampaigns(ctx, campaignId, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *CreateAssociatedBudgetRulesForSDCampaignsParams, body CreateAssociatedBudgetRulesForSDCampaignsJSONRequestBody) (*CreateAssociatedBudgetRulesForSDCampaignsResp, error) {
+	rsp, err := c.CreateAssociatedBudgetRulesForSDCampaigns(ctx, campaignId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5497,8 +5861,8 @@ func (c *ClientWithResponses) CreateAssociatedBudgetRulesForSDCampaignsWithRespo
 }
 
 // GetRuleBasedBudgetHistoryForSDCampaignsWithResponse request returning *GetRuleBasedBudgetHistoryForSDCampaignsResp
-func (c *ClientWithResponses) GetRuleBasedBudgetHistoryForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams, reqEditors ...RequestEditorFn) (*GetRuleBasedBudgetHistoryForSDCampaignsResp, error) {
-	rsp, err := c.GetRuleBasedBudgetHistoryForSDCampaigns(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) GetRuleBasedBudgetHistoryForSDCampaignsWithResponse(ctx context.Context, campaignId int64, params *GetRuleBasedBudgetHistoryForSDCampaignsParams) (*GetRuleBasedBudgetHistoryForSDCampaignsResp, error) {
+	rsp, err := c.GetRuleBasedBudgetHistoryForSDCampaigns(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5506,8 +5870,8 @@ func (c *ClientWithResponses) GetRuleBasedBudgetHistoryForSDCampaignsWithRespons
 }
 
 // DisassociateAssociatedBudgetRuleForSDCampaignsWithResponse request returning *DisassociateAssociatedBudgetRuleForSDCampaignsResp
-func (c *ClientWithResponses) DisassociateAssociatedBudgetRuleForSDCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams, reqEditors ...RequestEditorFn) (*DisassociateAssociatedBudgetRuleForSDCampaignsResp, error) {
-	rsp, err := c.DisassociateAssociatedBudgetRuleForSDCampaigns(ctx, campaignId, budgetRuleId, params, reqEditors...)
+func (c *ClientWithResponses) DisassociateAssociatedBudgetRuleForSDCampaignsWithResponse(ctx context.Context, campaignId int64, budgetRuleId string, params *DisassociateAssociatedBudgetRuleForSDCampaignsParams) (*DisassociateAssociatedBudgetRuleForSDCampaignsResp, error) {
+	rsp, err := c.DisassociateAssociatedBudgetRuleForSDCampaigns(ctx, campaignId, budgetRuleId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5515,16 +5879,16 @@ func (c *ClientWithResponses) DisassociateAssociatedBudgetRuleForSDCampaignsWith
 }
 
 // GetHeadlineRecommendationsForSDWithBodyWithResponse request with arbitrary body returning *GetHeadlineRecommendationsForSDResp
-func (c *ClientWithResponses) GetHeadlineRecommendationsForSDWithBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetHeadlineRecommendationsForSDResp, error) {
-	rsp, err := c.GetHeadlineRecommendationsForSDWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetHeadlineRecommendationsForSDWithBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, contentType string, body io.Reader) (*GetHeadlineRecommendationsForSDResp, error) {
+	rsp, err := c.GetHeadlineRecommendationsForSDWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetHeadlineRecommendationsForSDResp(rsp)
 }
 
-func (c *ClientWithResponses) GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetHeadlineRecommendationsForSDResp, error) {
-	rsp, err := c.GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBodyWithResponse(ctx context.Context, params *GetHeadlineRecommendationsForSDParams, body GetHeadlineRecommendationsForSDApplicationVndSdheadlinerecommendationrequestV40PlusJSONRequestBody) (*GetHeadlineRecommendationsForSDResp, error) {
+	rsp, err := c.GetHeadlineRecommendationsForSDWithApplicationVndSdheadlinerecommendationrequestV40PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5532,8 +5896,8 @@ func (c *ClientWithResponses) GetHeadlineRecommendationsForSDWithApplicationVndS
 }
 
 // GetSnapshotByIdWithResponse request returning *GetSnapshotByIdResp
-func (c *ClientWithResponses) GetSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams, reqEditors ...RequestEditorFn) (*GetSnapshotByIdResp, error) {
-	rsp, err := c.GetSnapshotById(ctx, snapshotId, params, reqEditors...)
+func (c *ClientWithResponses) GetSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *GetSnapshotByIdParams) (*GetSnapshotByIdResp, error) {
+	rsp, err := c.GetSnapshotById(ctx, snapshotId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5541,8 +5905,8 @@ func (c *ClientWithResponses) GetSnapshotByIdWithResponse(ctx context.Context, s
 }
 
 // DownloadSnapshotByIdWithResponse request returning *DownloadSnapshotByIdResp
-func (c *ClientWithResponses) DownloadSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams, reqEditors ...RequestEditorFn) (*DownloadSnapshotByIdResp, error) {
-	rsp, err := c.DownloadSnapshotById(ctx, snapshotId, params, reqEditors...)
+func (c *ClientWithResponses) DownloadSnapshotByIdWithResponse(ctx context.Context, snapshotId string, params *DownloadSnapshotByIdParams) (*DownloadSnapshotByIdResp, error) {
+	rsp, err := c.DownloadSnapshotById(ctx, snapshotId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -5550,32 +5914,32 @@ func (c *ClientWithResponses) DownloadSnapshotByIdWithResponse(ctx context.Conte
 }
 
 // GetTargetBidRecommendationsWithBodyWithResponse request with arbitrary body returning *GetTargetBidRecommendationsResp
-func (c *ClientWithResponses) GetTargetBidRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error) {
-	rsp, err := c.GetTargetBidRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetBidRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, contentType string, body io.Reader) (*GetTargetBidRecommendationsResp, error) {
+	rsp, err := c.GetTargetBidRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetBidRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error) {
-	rsp, err := c.GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*GetTargetBidRecommendationsResp, error) {
+	rsp, err := c.GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetBidRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error) {
-	rsp, err := c.GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*GetTargetBidRecommendationsResp, error) {
+	rsp, err := c.GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetBidRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetBidRecommendationsResp, error) {
-	rsp, err := c.GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetBidRecommendationsParams, body GetTargetBidRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*GetTargetBidRecommendationsResp, error) {
+	rsp, err := c.GetTargetBidRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5583,48 +5947,48 @@ func (c *ClientWithResponses) GetTargetBidRecommendationsWithApplicationVndSdtar
 }
 
 // GetTargetRecommendationsWithBodyWithResponse request with arbitrary body returning *GetTargetRecommendationsResp
-func (c *ClientWithResponses) GetTargetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error) {
-	rsp, err := c.GetTargetRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetRecommendationsWithBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, contentType string, body io.Reader) (*GetTargetRecommendationsResp, error) {
+	rsp, err := c.GetTargetRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error) {
-	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV30PlusJSONRequestBody) (*GetTargetRecommendationsResp, error) {
+	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV30PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error) {
-	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV31PlusJSONRequestBody) (*GetTargetRecommendationsResp, error) {
+	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV31PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error) {
-	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV32PlusJSONRequestBody) (*GetTargetRecommendationsResp, error) {
+	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV32PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error) {
-	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV33PlusJSONRequestBody) (*GetTargetRecommendationsResp, error) {
+	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV33PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetRecommendationsResp, error) {
-	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBodyWithResponse(ctx context.Context, params *GetTargetRecommendationsParams, body GetTargetRecommendationsApplicationVndSdtargetingrecommendationsV34PlusJSONRequestBody) (*GetTargetRecommendationsResp, error) {
+	rsp, err := c.GetTargetRecommendationsWithApplicationVndSdtargetingrecommendationsV34PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -5632,16 +5996,16 @@ func (c *ClientWithResponses) GetTargetRecommendationsWithApplicationVndSdtarget
 }
 
 // CreateSnapshotWithBodyWithResponse request with arbitrary body returning *CreateSnapshotResp
-func (c *ClientWithResponses) CreateSnapshotWithBodyWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateSnapshotResp, error) {
-	rsp, err := c.CreateSnapshotWithBody(ctx, recordType, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateSnapshotWithBodyWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, contentType string, body io.Reader) (*CreateSnapshotResp, error) {
+	rsp, err := c.CreateSnapshotWithBody(ctx, recordType, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateSnapshotResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateSnapshotResp, error) {
-	rsp, err := c.CreateSnapshot(ctx, recordType, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateSnapshotWithResponse(ctx context.Context, recordType CreateSnapshotParamsRecordType, params *CreateSnapshotParams, body CreateSnapshotJSONRequestBody) (*CreateSnapshotResp, error) {
+	rsp, err := c.CreateSnapshot(ctx, recordType, params, body)
 	if err != nil {
 		return nil, err
 	}

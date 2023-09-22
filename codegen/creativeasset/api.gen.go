@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for CaAssetSortCriteriaField.
@@ -874,8 +875,11 @@ func (t *CaValueRangeFilterOptions) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -899,6 +903,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -924,6 +935,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -945,109 +960,174 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetAsset request
-	GetAsset(ctx context.Context, params *GetAssetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAsset(ctx context.Context, params *GetAssetParams) (*http.Response, error)
 
 	// RegisterAssetWithBody request with any body
-	RegisterAssetWithBody(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RegisterAssetWithBody(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader) (*http.Response, error)
 
-	RegisterAsset(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	RegisterAsset(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody) (*http.Response, error)
 
 	// SearchAssetsWithBody request with any body
-	SearchAssetsWithBody(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchAssetsWithBody(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SearchAssets(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SearchAssets(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody) (*http.Response, error)
 
 	// GetUploadLocationWithBody request with any body
-	GetUploadLocationWithBody(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetUploadLocationWithBody(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetUploadLocation(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetUploadLocation(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) GetAsset(ctx context.Context, params *GetAssetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAsset(ctx context.Context, params *GetAssetParams) (*http.Response, error) {
 	req, err := NewGetAssetRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) RegisterAssetWithBody(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) RegisterAssetWithBody(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewRegisterAssetRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) RegisterAsset(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) RegisterAsset(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody) (*http.Response, error) {
 	req, err := NewRegisterAssetRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SearchAssetsWithBody(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SearchAssetsWithBody(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSearchAssetsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SearchAssets(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SearchAssets(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewSearchAssetsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetUploadLocationWithBody(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetUploadLocationWithBody(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetUploadLocationRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetUploadLocation(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetUploadLocation(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetUploadLocationRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGetAssetRequest generates requests for GetAsset
@@ -1078,9 +1158,11 @@ func NewGetAssetRequest(server string, params *GetAssetParams) (*http.Request, e
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -1092,9 +1174,11 @@ func NewGetAssetRequest(server string, params *GetAssetParams) (*http.Request, e
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -1319,13 +1403,8 @@ func NewGetUploadLocationRequestWithBody(server string, params *GetUploadLocatio
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -1333,7 +1412,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -1363,22 +1449,22 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetAssetWithResponse request
-	GetAssetWithResponse(ctx context.Context, params *GetAssetParams, reqEditors ...RequestEditorFn) (*GetAssetResp, error)
+	GetAssetWithResponse(ctx context.Context, params *GetAssetParams) (*GetAssetResp, error)
 
 	// RegisterAssetWithBodyWithResponse request with any body
-	RegisterAssetWithBodyWithResponse(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterAssetResp, error)
+	RegisterAssetWithBodyWithResponse(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader) (*RegisterAssetResp, error)
 
-	RegisterAssetWithResponse(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterAssetResp, error)
+	RegisterAssetWithResponse(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody) (*RegisterAssetResp, error)
 
 	// SearchAssetsWithBodyWithResponse request with any body
-	SearchAssetsWithBodyWithResponse(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAssetsResp, error)
+	SearchAssetsWithBodyWithResponse(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader) (*SearchAssetsResp, error)
 
-	SearchAssetsWithResponse(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAssetsResp, error)
+	SearchAssetsWithResponse(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody) (*SearchAssetsResp, error)
 
 	// GetUploadLocationWithBodyWithResponse request with any body
-	GetUploadLocationWithBodyWithResponse(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetUploadLocationResp, error)
+	GetUploadLocationWithBodyWithResponse(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader) (*GetUploadLocationResp, error)
 
-	GetUploadLocationWithResponse(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody, reqEditors ...RequestEditorFn) (*GetUploadLocationResp, error)
+	GetUploadLocationWithResponse(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody) (*GetUploadLocationResp, error)
 }
 
 type GetAssetResp struct {
@@ -1508,8 +1594,8 @@ func (r GetUploadLocationResp) StatusCode() int {
 }
 
 // GetAssetWithResponse request returning *GetAssetResp
-func (c *ClientWithResponses) GetAssetWithResponse(ctx context.Context, params *GetAssetParams, reqEditors ...RequestEditorFn) (*GetAssetResp, error) {
-	rsp, err := c.GetAsset(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetAssetWithResponse(ctx context.Context, params *GetAssetParams) (*GetAssetResp, error) {
+	rsp, err := c.GetAsset(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1517,16 +1603,16 @@ func (c *ClientWithResponses) GetAssetWithResponse(ctx context.Context, params *
 }
 
 // RegisterAssetWithBodyWithResponse request with arbitrary body returning *RegisterAssetResp
-func (c *ClientWithResponses) RegisterAssetWithBodyWithResponse(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RegisterAssetResp, error) {
-	rsp, err := c.RegisterAssetWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) RegisterAssetWithBodyWithResponse(ctx context.Context, params *RegisterAssetParams, contentType string, body io.Reader) (*RegisterAssetResp, error) {
+	rsp, err := c.RegisterAssetWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseRegisterAssetResp(rsp)
 }
 
-func (c *ClientWithResponses) RegisterAssetWithResponse(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody, reqEditors ...RequestEditorFn) (*RegisterAssetResp, error) {
-	rsp, err := c.RegisterAsset(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) RegisterAssetWithResponse(ctx context.Context, params *RegisterAssetParams, body RegisterAssetJSONRequestBody) (*RegisterAssetResp, error) {
+	rsp, err := c.RegisterAsset(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1534,16 +1620,16 @@ func (c *ClientWithResponses) RegisterAssetWithResponse(ctx context.Context, par
 }
 
 // SearchAssetsWithBodyWithResponse request with arbitrary body returning *SearchAssetsResp
-func (c *ClientWithResponses) SearchAssetsWithBodyWithResponse(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SearchAssetsResp, error) {
-	rsp, err := c.SearchAssetsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SearchAssetsWithBodyWithResponse(ctx context.Context, params *SearchAssetsParams, contentType string, body io.Reader) (*SearchAssetsResp, error) {
+	rsp, err := c.SearchAssetsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSearchAssetsResp(rsp)
 }
 
-func (c *ClientWithResponses) SearchAssetsWithResponse(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody, reqEditors ...RequestEditorFn) (*SearchAssetsResp, error) {
-	rsp, err := c.SearchAssets(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SearchAssetsWithResponse(ctx context.Context, params *SearchAssetsParams, body SearchAssetsJSONRequestBody) (*SearchAssetsResp, error) {
+	rsp, err := c.SearchAssets(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1551,16 +1637,16 @@ func (c *ClientWithResponses) SearchAssetsWithResponse(ctx context.Context, para
 }
 
 // GetUploadLocationWithBodyWithResponse request with arbitrary body returning *GetUploadLocationResp
-func (c *ClientWithResponses) GetUploadLocationWithBodyWithResponse(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetUploadLocationResp, error) {
-	rsp, err := c.GetUploadLocationWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetUploadLocationWithBodyWithResponse(ctx context.Context, params *GetUploadLocationParams, contentType string, body io.Reader) (*GetUploadLocationResp, error) {
+	rsp, err := c.GetUploadLocationWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetUploadLocationResp(rsp)
 }
 
-func (c *ClientWithResponses) GetUploadLocationWithResponse(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody, reqEditors ...RequestEditorFn) (*GetUploadLocationResp, error) {
-	rsp, err := c.GetUploadLocation(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetUploadLocationWithResponse(ctx context.Context, params *GetUploadLocationParams, body GetUploadLocationJSONRequestBody) (*GetUploadLocationResp, error) {
+	rsp, err := c.GetUploadLocation(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

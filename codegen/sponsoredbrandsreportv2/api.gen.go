@@ -11,11 +11,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 const (
@@ -6184,6 +6185,42 @@ type ListNegativeTargetsJSONBody struct {
 	NextToken *NextToken `json:"nextToken,omitempty"`
 }
 
+// ListNegativeTargetsJSONBodyFilters0 defines parameters for ListNegativeTargets.
+type ListNegativeTargetsJSONBodyFilters0 struct {
+	// FilterType Set `filterType` to `CREATIVE_TYPE` to filter by creative type. If no filter is specified, all negative targets will be returned.
+	FilterType *ListNegativeTargetsJSONBodyFilters0FilterType `json:"filterType,omitempty"`
+
+	// Values A list of creative types.
+	Values *[]ListNegativeTargetsJSONBodyFilters0Values `json:"values,omitempty"`
+}
+
+// ListNegativeTargetsJSONBodyFilters1 defines parameters for ListNegativeTargets.
+type ListNegativeTargetsJSONBodyFilters1 struct {
+	// FilterType Set `filterType` to `TARGETING_STATE` to filter by negative target state.
+	FilterType *ListNegativeTargetsJSONBodyFilters1FilterType `json:"filterType,omitempty"`
+
+	// Values A list of negative target states.
+	Values *[]SBNegativeTargetState `json:"values,omitempty"`
+}
+
+// ListNegativeTargetsJSONBodyFilters2 defines parameters for ListNegativeTargets.
+type ListNegativeTargetsJSONBodyFilters2 struct {
+	// FilterType Set `filterType` to `CAMPAIGN_ID` to filter by campaign identifiers.
+	FilterType *ListNegativeTargetsJSONBodyFilters2FilterType `json:"filterType,omitempty"`
+
+	// Values A list of campaign identifiers.
+	Values *[]string `json:"values,omitempty"`
+}
+
+// ListNegativeTargetsJSONBodyFilters3 defines parameters for ListNegativeTargets.
+type ListNegativeTargetsJSONBodyFilters3 struct {
+	// FilterType Set `filterType` to `AD_GROUP_ID` to filter by ad group identifier.
+	FilterType *ListNegativeTargetsJSONBodyFilters3FilterType `json:"filterType,omitempty"`
+
+	// Values A list of ad group identifiers.
+	Values *[]string `json:"values,omitempty"`
+}
+
 // ListNegativeTargetsJSONBody_Filters_Item defines parameters for ListNegativeTargets.
 type ListNegativeTargetsJSONBody_Filters_Item struct {
 	union json.RawMessage
@@ -6295,6 +6332,14 @@ type GetProductRecommendationsParams struct {
 	AmazonAdvertisingAPIScope ProfileHeader `json:"Amazon-Advertising-API-Scope"`
 }
 
+// GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONBodyFilters0 defines parameters for GetProductRecommendations.
+type GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONBodyFilters0 struct {
+	FilterType *GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONBodyFilters0FilterType `json:"filterType,omitempty"`
+
+	// Values A list of ASINs.
+	Values *[]string `json:"values,omitempty"`
+}
+
 // GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONBody_Filters_Item defines parameters for GetProductRecommendations.
 type GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONBody_Filters_Item struct {
 	union json.RawMessage
@@ -6320,6 +6365,42 @@ type ListTargetsJSONBody struct {
 
 	// NextToken Operations that return paginated results include a pagination token in this field. To retrieve the next page of results, call the same operation and specify this token in the request. If the `NextToken` field is empty, there are no further results.
 	NextToken *NextToken `json:"nextToken,omitempty"`
+}
+
+// ListTargetsJSONBodyFilters0 defines parameters for ListTargets.
+type ListTargetsJSONBodyFilters0 struct {
+	// FilterType Set `filterType` to `CREATIVE_TYPE` to filter by creative type. If no filter is specified, all targets will be returned.
+	FilterType *ListTargetsJSONBodyFilters0FilterType `json:"filterType,omitempty"`
+
+	// Values A list of creative types.
+	Values *[]ListTargetsJSONBodyFilters0Values `json:"values,omitempty"`
+}
+
+// ListTargetsJSONBodyFilters1 defines parameters for ListTargets.
+type ListTargetsJSONBodyFilters1 struct {
+	// FilterType Set `filterType` to `TARGETING_STATE` to filter by target state.
+	FilterType *ListTargetsJSONBodyFilters1FilterType `json:"filterType,omitempty"`
+
+	// Values A list of target states.
+	Values *[]ListTargetsJSONBodyFilters1Values `json:"values,omitempty"`
+}
+
+// ListTargetsJSONBodyFilters2 defines parameters for ListTargets.
+type ListTargetsJSONBodyFilters2 struct {
+	// FilterType Set `filterType` to `CAMPAIGN_ID` to filter by campaign identifiers.
+	FilterType *ListTargetsJSONBodyFilters2FilterType `json:"filterType,omitempty"`
+
+	// Values A list of campaign identifiers.
+	Values *[]string `json:"values,omitempty"`
+}
+
+// ListTargetsJSONBodyFilters3 defines parameters for ListTargets.
+type ListTargetsJSONBodyFilters3 struct {
+	// FilterType Set `filterType` to `AD_GROUP_ID` to filter by ad group identifier.
+	FilterType *ListTargetsJSONBodyFilters3FilterType `json:"filterType,omitempty"`
+
+	// Values A list of ad group identifiers.
+	Values *[]SBAdGroupId `json:"values,omitempty"`
 }
 
 // ListTargetsJSONBody_Filters_Item defines parameters for ListTargets.
@@ -11157,8 +11238,11 @@ func (t *SBUpdateDraftCampaignRequestWithProductTargetsV33_Creative) UnmarshalJS
 	return err
 }
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -11182,6 +11266,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -11207,6 +11298,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -11228,1234 +11323,1915 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetBrands request
-	GetBrands(ctx context.Context, params *GetBrandsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBrands(ctx context.Context, params *GetBrandsParams) (*http.Response, error)
 
 	// CompleteUploadWithBody request with any body
-	CompleteUploadWithBody(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CompleteUploadWithBody(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CompleteUpload(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CompleteUpload(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody) (*http.Response, error)
 
 	// DescribeMedia request
-	DescribeMedia(ctx context.Context, params *DescribeMediaParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DescribeMedia(ctx context.Context, params *DescribeMediaParams) (*http.Response, error)
 
 	// CreateUploadResourceWithBody request with any body
-	CreateUploadResourceWithBody(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateUploadResourceWithBody(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateUploadResource(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateUploadResource(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody) (*http.Response, error)
 
 	// ListAsins request
-	ListAsins(ctx context.Context, params *ListAsinsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAsins(ctx context.Context, params *ListAsinsParams) (*http.Response, error)
 
 	// ListAdGroups request
-	ListAdGroups(ctx context.Context, params *ListAdGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAdGroups(ctx context.Context, params *ListAdGroupsParams) (*http.Response, error)
 
 	// GetAdGroup request
-	GetAdGroup(ctx context.Context, adGroupId int64, params *GetAdGroupParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAdGroup(ctx context.Context, adGroupId int64, params *GetAdGroupParams) (*http.Response, error)
 
 	// ListCampaigns request
-	ListCampaigns(ctx context.Context, params *ListCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListCampaigns(ctx context.Context, params *ListCampaignsParams) (*http.Response, error)
 
 	// CreateCampaignsWithBody request with any body
-	CreateCampaignsWithBody(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateCampaignsWithBody(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody) (*http.Response, error)
 
-	CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody) (*http.Response, error)
 
-	CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateCampaignsWithBody request with any body
-	UpdateCampaignsWithBody(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCampaignsWithBody(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody) (*http.Response, error)
 
 	// ArchiveCampaign request
-	ArchiveCampaign(ctx context.Context, campaignId int64, params *ArchiveCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ArchiveCampaign(ctx context.Context, campaignId int64, params *ArchiveCampaignParams) (*http.Response, error)
 
 	// GetCampaign request
-	GetCampaign(ctx context.Context, campaignId int64, params *GetCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCampaign(ctx context.Context, campaignId int64, params *GetCampaignParams) (*http.Response, error)
 
 	// ListDraftCampaigns request
-	ListDraftCampaigns(ctx context.Context, params *ListDraftCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListDraftCampaigns(ctx context.Context, params *ListDraftCampaignsParams) (*http.Response, error)
 
 	// CreateDraftCampaignsWithBody request with any body
-	CreateDraftCampaignsWithBody(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDraftCampaignsWithBody(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody) (*http.Response, error)
 
-	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody) (*http.Response, error)
 
-	CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateDraftCampaignsWithBody request with any body
-	UpdateDraftCampaignsWithBody(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDraftCampaignsWithBody(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody) (*http.Response, error)
 
-	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody) (*http.Response, error)
 
 	// SubmitDraftCampaignWithBody request with any body
-	SubmitDraftCampaignWithBody(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SubmitDraftCampaignWithBody(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBody(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBody(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody) (*http.Response, error)
 
 	// DeleteDraftCampaign request
-	DeleteDraftCampaign(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteDraftCampaign(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams) (*http.Response, error)
 
 	// GetDraftCampaign request
-	GetDraftCampaign(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDraftCampaign(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams) (*http.Response, error)
 
 	// ListKeywords request
-	ListKeywords(ctx context.Context, params *ListKeywordsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListKeywords(ctx context.Context, params *ListKeywordsParams) (*http.Response, error)
 
 	// CreateKeywordsWithBody request with any body
-	CreateKeywordsWithBody(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateKeywordsWithBody(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateKeywordsWithBody request with any body
-	UpdateKeywordsWithBody(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateKeywordsWithBody(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ArchiveKeyword request
-	ArchiveKeyword(ctx context.Context, keywordId int64, params *ArchiveKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ArchiveKeyword(ctx context.Context, keywordId int64, params *ArchiveKeywordParams) (*http.Response, error)
 
 	// GetKeyword request
-	GetKeyword(ctx context.Context, keywordId int64, params *GetKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetKeyword(ctx context.Context, keywordId int64, params *GetKeywordParams) (*http.Response, error)
 
 	// GetSbModerationCampaignsCampaignId request
-	GetSbModerationCampaignsCampaignId(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSbModerationCampaignsCampaignId(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams) (*http.Response, error)
 
 	// ListNegativeKeywords request
-	ListNegativeKeywords(ctx context.Context, params *ListNegativeKeywordsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListNegativeKeywords(ctx context.Context, params *ListNegativeKeywordsParams) (*http.Response, error)
 
 	// CreateNegativeKeywordsWithBody request with any body
-	CreateNegativeKeywordsWithBody(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateNegativeKeywordsWithBody(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// UpdateNegativeKeywordsWithBody request with any body
-	UpdateNegativeKeywordsWithBody(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateNegativeKeywordsWithBody(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ArchiveNegativeKeyword request
-	ArchiveNegativeKeyword(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ArchiveNegativeKeyword(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams) (*http.Response, error)
 
 	// GetNegativeKeyword request
-	GetNegativeKeyword(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetNegativeKeyword(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams) (*http.Response, error)
 
 	// CreateNegativeTargetsWithBody request with any body
-	CreateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateNegativeTargets(ctx context.Context, body CreateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateNegativeTargets(ctx context.Context, body CreateNegativeTargetsJSONRequestBody) (*http.Response, error)
 
 	// UpdateNegativeTargetsWithBody request with any body
-	UpdateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateNegativeTargets(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateNegativeTargets(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody) (*http.Response, error)
 
 	// ListNegativeTargetsWithBody request with any body
-	ListNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	ListNegativeTargets(ctx context.Context, body ListNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListNegativeTargets(ctx context.Context, body ListNegativeTargetsJSONRequestBody) (*http.Response, error)
 
 	// ArchiveNegativeTarget request
-	ArchiveNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ArchiveNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId) (*http.Response, error)
 
 	// GetNegativeTarget request
-	GetNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId) (*http.Response, error)
 
 	// GetBidsRecommendationsWithBody request with any body
-	GetBidsRecommendationsWithBody(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBidsRecommendationsWithBody(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetBidsRecommendations(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBidsRecommendations(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody) (*http.Response, error)
 
 	// GetBrandRecommendationsWithBody request with any body
-	GetBrandRecommendationsWithBody(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBrandRecommendationsWithBody(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody) (*http.Response, error)
 
 	// GetTargetingCategoriesWithBody request with any body
-	GetTargetingCategoriesWithBody(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetingCategoriesWithBody(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetTargetingCategories(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTargetingCategories(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody) (*http.Response, error)
 
 	// GetProductRecommendationsWithBody request with any body
-	GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody) (*http.Response, error)
 
 	// CreateTargetsWithBody request with any body
-	CreateTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateTargets(ctx context.Context, body CreateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateTargets(ctx context.Context, body CreateTargetsJSONRequestBody) (*http.Response, error)
 
 	// UpdateTargetsWithBody request with any body
-	UpdateTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateTargets(ctx context.Context, body UpdateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateTargets(ctx context.Context, body UpdateTargetsJSONRequestBody) (*http.Response, error)
 
 	// ListTargetsWithBody request with any body
-	ListTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	ListTargets(ctx context.Context, body ListTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListTargets(ctx context.Context, body ListTargetsJSONRequestBody) (*http.Response, error)
 
 	// ArchiveTarget request
-	ArchiveTarget(ctx context.Context, targetId SBTargetId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ArchiveTarget(ctx context.Context, targetId SBTargetId) (*http.Response, error)
 
 	// GetTarget request
-	GetTarget(ctx context.Context, targetId SBTargetId, params *GetTargetParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTarget(ctx context.Context, targetId SBTargetId, params *GetTargetParams) (*http.Response, error)
 
 	// SbCreateThemesWithBody request with any body
-	SbCreateThemesWithBody(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SbCreateThemesWithBody(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBody(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBody(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody) (*http.Response, error)
 
 	// SbUpdateThemesWithBody request with any body
-	SbUpdateThemesWithBody(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SbUpdateThemesWithBody(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody) (*http.Response, error)
 
 	// SbListThemesWithBody request with any body
-	SbListThemesWithBody(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SbListThemesWithBody(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBody(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBody(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody) (*http.Response, error)
 
 	// ListAssets request
-	ListAssets(ctx context.Context, params *ListAssetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAssets(ctx context.Context, params *ListAssetsParams) (*http.Response, error)
 
 	// CreateAssetWithBody request with any body
-	CreateAssetWithBody(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAssetWithBody(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader) (*http.Response, error)
 
 	// PostV2HsaRecordTypeReportWithBody request with any body
-	PostV2HsaRecordTypeReportWithBody(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostV2HsaRecordTypeReportWithBody(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader) (*http.Response, error)
 
-	PostV2HsaRecordTypeReport(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostV2HsaRecordTypeReport(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody) (*http.Response, error)
 
 	// GetV2ReportsReportId request
-	GetV2ReportsReportId(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetV2ReportsReportId(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams) (*http.Response, error)
 
 	// DownloadReport request
-	DownloadReport(ctx context.Context, reportId string, params *DownloadReportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DownloadReport(ctx context.Context, reportId string, params *DownloadReportParams) (*http.Response, error)
 }
 
-func (c *Client) GetBrands(ctx context.Context, params *GetBrandsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBrands(ctx context.Context, params *GetBrandsParams) (*http.Response, error) {
 	req, err := NewGetBrandsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CompleteUploadWithBody(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CompleteUploadWithBody(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCompleteUploadRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CompleteUpload(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CompleteUpload(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody) (*http.Response, error) {
 	req, err := NewCompleteUploadRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DescribeMedia(ctx context.Context, params *DescribeMediaParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DescribeMedia(ctx context.Context, params *DescribeMediaParams) (*http.Response, error) {
 	req, err := NewDescribeMediaRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateUploadResourceWithBody(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateUploadResourceWithBody(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateUploadResourceRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateUploadResource(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateUploadResource(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateUploadResourceRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListAsins(ctx context.Context, params *ListAsinsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAsins(ctx context.Context, params *ListAsinsParams) (*http.Response, error) {
 	req, err := NewListAsinsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListAdGroups(ctx context.Context, params *ListAdGroupsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAdGroups(ctx context.Context, params *ListAdGroupsParams) (*http.Response, error) {
 	req, err := NewListAdGroupsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetAdGroup(ctx context.Context, adGroupId int64, params *GetAdGroupParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAdGroup(ctx context.Context, adGroupId int64, params *GetAdGroupParams) (*http.Response, error) {
 	req, err := NewGetAdGroupRequest(c.Server, adGroupId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListCampaigns(ctx context.Context, params *ListCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListCampaigns(ctx context.Context, params *ListCampaignsParams) (*http.Response, error) {
 	req, err := NewListCampaignsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateCampaignsWithBody(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateCampaignsWithBody(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateCampaignsRequestWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateCampaignsRequestWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateCampaignsRequestWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateCampaignsWithBody(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateCampaignsWithBody(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateCampaignsRequestWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateCampaignsRequestWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateCampaignsRequestWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ArchiveCampaign(ctx context.Context, campaignId int64, params *ArchiveCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ArchiveCampaign(ctx context.Context, campaignId int64, params *ArchiveCampaignParams) (*http.Response, error) {
 	req, err := NewArchiveCampaignRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCampaign(ctx context.Context, campaignId int64, params *GetCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCampaign(ctx context.Context, campaignId int64, params *GetCampaignParams) (*http.Response, error) {
 	req, err := NewGetCampaignRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListDraftCampaigns(ctx context.Context, params *ListDraftCampaignsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListDraftCampaigns(ctx context.Context, params *ListDraftCampaignsParams) (*http.Response, error) {
 	req, err := NewListDraftCampaignsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDraftCampaignsWithBody(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDraftCampaignsWithBody(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateDraftCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDraftCampaignsRequestWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDraftCampaignsRequestWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDraftCampaignsRequestWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDraftCampaignsWithBody(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDraftCampaignsWithBody(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateDraftCampaignsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDraftCampaignsRequestWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDraftCampaignsRequestWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDraftCampaignsRequestWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SubmitDraftCampaignWithBody(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SubmitDraftCampaignWithBody(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSubmitDraftCampaignRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBody(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBody(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSubmitDraftCampaignRequestWithApplicationVndSbcampaignV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DeleteDraftCampaign(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteDraftCampaign(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams) (*http.Response, error) {
 	req, err := NewDeleteDraftCampaignRequest(c.Server, draftCampaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDraftCampaign(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDraftCampaign(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams) (*http.Response, error) {
 	req, err := NewGetDraftCampaignRequest(c.Server, draftCampaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListKeywords(ctx context.Context, params *ListKeywordsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListKeywords(ctx context.Context, params *ListKeywordsParams) (*http.Response, error) {
 	req, err := NewListKeywordsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateKeywordsWithBody(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateKeywordsWithBody(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateKeywordsRequestWithApplicationVndSbkeywordresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateKeywordsWithBody(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateKeywordsWithBody(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateKeywordsRequestWithApplicationVndSbkeywordresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ArchiveKeyword(ctx context.Context, keywordId int64, params *ArchiveKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ArchiveKeyword(ctx context.Context, keywordId int64, params *ArchiveKeywordParams) (*http.Response, error) {
 	req, err := NewArchiveKeywordRequest(c.Server, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetKeyword(ctx context.Context, keywordId int64, params *GetKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetKeyword(ctx context.Context, keywordId int64, params *GetKeywordParams) (*http.Response, error) {
 	req, err := NewGetKeywordRequest(c.Server, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetSbModerationCampaignsCampaignId(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSbModerationCampaignsCampaignId(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams) (*http.Response, error) {
 	req, err := NewGetSbModerationCampaignsCampaignIdRequest(c.Server, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListNegativeKeywords(ctx context.Context, params *ListNegativeKeywordsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListNegativeKeywords(ctx context.Context, params *ListNegativeKeywordsParams) (*http.Response, error) {
 	req, err := NewListNegativeKeywordsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateNegativeKeywordsWithBody(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateNegativeKeywordsWithBody(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateNegativeKeywordsRequestWithApplicationVndSbkeywordresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateNegativeKeywordsWithBody(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateNegativeKeywordsWithBody(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateNegativeKeywordsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateNegativeKeywordsRequestWithApplicationVndSbkeywordresponseV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ArchiveNegativeKeyword(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ArchiveNegativeKeyword(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams) (*http.Response, error) {
 	req, err := NewArchiveNegativeKeywordRequest(c.Server, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetNegativeKeyword(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetNegativeKeyword(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams) (*http.Response, error) {
 	req, err := NewGetNegativeKeywordRequest(c.Server, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateNegativeTargetsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateNegativeTargets(ctx context.Context, body CreateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateNegativeTargets(ctx context.Context, body CreateNegativeTargetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateNegativeTargetsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateNegativeTargetsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateNegativeTargets(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateNegativeTargets(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateNegativeTargetsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListNegativeTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListNegativeTargetsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListNegativeTargets(ctx context.Context, body ListNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListNegativeTargets(ctx context.Context, body ListNegativeTargetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewListNegativeTargetsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ArchiveNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ArchiveNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId) (*http.Response, error) {
 	req, err := NewArchiveNegativeTargetRequest(c.Server, negativeTargetId)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetNegativeTarget(ctx context.Context, negativeTargetId SBNegativeTargetId) (*http.Response, error) {
 	req, err := NewGetNegativeTargetRequest(c.Server, negativeTargetId)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBidsRecommendationsWithBody(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBidsRecommendationsWithBody(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetBidsRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBidsRecommendations(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBidsRecommendations(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetBidsRecommendationsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBrandRecommendationsWithBody(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBrandRecommendationsWithBody(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetBrandRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetBrandRecommendationsRequestWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetingCategoriesWithBody(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetingCategoriesWithBody(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetTargetingCategoriesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTargetingCategories(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTargetingCategories(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetTargetingCategoriesRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetProductRecommendationsWithBody(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGetProductRecommendationsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBody(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGetProductRecommendationsRequestWithApplicationVndSbproductrecommendationsV30PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateTargetsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateTargets(ctx context.Context, body CreateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateTargets(ctx context.Context, body CreateTargetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateTargetsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateTargetsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateTargets(ctx context.Context, body UpdateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateTargets(ctx context.Context, body UpdateTargetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateTargetsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListTargetsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListTargetsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListTargetsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListTargets(ctx context.Context, body ListTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListTargets(ctx context.Context, body ListTargetsJSONRequestBody) (*http.Response, error) {
 	req, err := NewListTargetsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ArchiveTarget(ctx context.Context, targetId SBTargetId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ArchiveTarget(ctx context.Context, targetId SBTargetId) (*http.Response, error) {
 	req, err := NewArchiveTargetRequest(c.Server, targetId)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetTarget(ctx context.Context, targetId SBTargetId, params *GetTargetParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTarget(ctx context.Context, targetId SBTargetId, params *GetTargetParams) (*http.Response, error) {
 	req, err := NewGetTargetRequest(c.Server, targetId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SbCreateThemesWithBody(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SbCreateThemesWithBody(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSbCreateThemesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBody(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBody(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSbCreateThemesRequestWithApplicationVndSbthemescreaterequestV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SbUpdateThemesWithBody(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SbUpdateThemesWithBody(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSbUpdateThemesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSbUpdateThemesRequestWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SbListThemesWithBody(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SbListThemesWithBody(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewSbListThemesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBody(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBody(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewSbListThemesRequestWithApplicationVndSbthemeslistrequestV3PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListAssets(ctx context.Context, params *ListAssetsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAssets(ctx context.Context, params *ListAssetsParams) (*http.Response, error) {
 	req, err := NewListAssetsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAssetWithBody(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAssetWithBody(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateAssetRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PostV2HsaRecordTypeReportWithBody(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PostV2HsaRecordTypeReportWithBody(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewPostV2HsaRecordTypeReportRequestWithBody(c.Server, recordType, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PostV2HsaRecordTypeReport(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PostV2HsaRecordTypeReport(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody) (*http.Response, error) {
 	req, err := NewPostV2HsaRecordTypeReportRequest(c.Server, recordType, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetV2ReportsReportId(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetV2ReportsReportId(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams) (*http.Response, error) {
 	req, err := NewGetV2ReportsReportIdRequest(c.Server, reportId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) DownloadReport(ctx context.Context, reportId string, params *DownloadReportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DownloadReport(ctx context.Context, reportId string, params *DownloadReportParams) (*http.Response, error) {
 	req, err := NewDownloadReportRequest(c.Server, reportId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGetBrandsRequest generates requests for GetBrands
@@ -12488,9 +13264,11 @@ func NewGetBrandsRequest(server string, params *GetBrandsParams) (*http.Request,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12619,9 +13397,11 @@ func NewDescribeMediaRequest(server string, params *DescribeMediaParams) (*http.
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -12748,9 +13528,11 @@ func NewListAsinsRequest(server string, params *ListAsinsParams) (*http.Request,
 			return nil, err
 		} else {
 			for k, v := range parsed {
+				values := make([]string, 0)
 				for _, v2 := range v {
-					queryValues.Add(k, v2)
+					values = append(values, v2)
 				}
+				queryValues.Add(k, strings.Join(values, ","))
 			}
 		}
 
@@ -12817,9 +13599,11 @@ func NewListAdGroupsRequest(server string, params *ListAdGroupsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12833,9 +13617,11 @@ func NewListAdGroupsRequest(server string, params *ListAdGroupsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12849,9 +13635,11 @@ func NewListAdGroupsRequest(server string, params *ListAdGroupsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12865,9 +13653,11 @@ func NewListAdGroupsRequest(server string, params *ListAdGroupsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12881,9 +13671,11 @@ func NewListAdGroupsRequest(server string, params *ListAdGroupsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -12897,9 +13689,11 @@ func NewListAdGroupsRequest(server string, params *ListAdGroupsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13024,9 +13818,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13040,9 +13836,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13056,9 +13854,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13072,9 +13872,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13088,9 +13890,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13104,9 +13908,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13120,9 +13926,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13136,9 +13944,11 @@ func NewListCampaignsRequest(server string, params *ListCampaignsParams) (*http.
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13438,9 +14248,11 @@ func NewGetCampaignRequest(server string, campaignId int64, params *GetCampaignP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13509,9 +14321,11 @@ func NewListDraftCampaignsRequest(server string, params *ListDraftCampaignsParam
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13525,9 +14339,11 @@ func NewListDraftCampaignsRequest(server string, params *ListDraftCampaignsParam
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13541,9 +14357,11 @@ func NewListDraftCampaignsRequest(server string, params *ListDraftCampaignsParam
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13557,9 +14375,11 @@ func NewListDraftCampaignsRequest(server string, params *ListDraftCampaignsParam
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13573,9 +14393,11 @@ func NewListDraftCampaignsRequest(server string, params *ListDraftCampaignsParam
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -13589,9 +14411,11 @@ func NewListDraftCampaignsRequest(server string, params *ListDraftCampaignsParam
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14002,9 +14826,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14018,9 +14844,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14034,9 +14862,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14050,9 +14880,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14066,9 +14898,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14082,9 +14916,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14098,9 +14934,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14114,9 +14952,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14130,9 +14970,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14146,9 +14988,11 @@ func NewListKeywordsRequest(server string, params *ListKeywordsParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14404,9 +15248,11 @@ func NewGetKeywordRequest(server string, keywordId int64, params *GetKeywordPara
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14531,9 +15377,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14547,9 +15395,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14563,9 +15413,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14579,9 +15431,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14595,9 +15449,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14611,9 +15467,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14627,9 +15485,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14643,9 +15503,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -14659,9 +15521,11 @@ func NewListNegativeKeywordsRequest(server string, params *ListNegativeKeywordsP
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -15289,9 +16153,11 @@ func NewGetTargetingCategoriesRequestWithBody(server string, params *GetTargetin
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -15820,9 +16686,11 @@ func NewListAssetsRequest(server string, params *ListAssetsParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -15836,9 +16704,11 @@ func NewListAssetsRequest(server string, params *ListAssetsParams) (*http.Reques
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -16127,13 +16997,8 @@ func NewDownloadReportRequest(server string, reportId string, params *DownloadRe
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -16141,7 +17006,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -16171,223 +17043,223 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetBrandsWithResponse request
-	GetBrandsWithResponse(ctx context.Context, params *GetBrandsParams, reqEditors ...RequestEditorFn) (*GetBrandsResp, error)
+	GetBrandsWithResponse(ctx context.Context, params *GetBrandsParams) (*GetBrandsResp, error)
 
 	// CompleteUploadWithBodyWithResponse request with any body
-	CompleteUploadWithBodyWithResponse(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteUploadResp, error)
+	CompleteUploadWithBodyWithResponse(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader) (*CompleteUploadResp, error)
 
-	CompleteUploadWithResponse(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteUploadResp, error)
+	CompleteUploadWithResponse(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody) (*CompleteUploadResp, error)
 
 	// DescribeMediaWithResponse request
-	DescribeMediaWithResponse(ctx context.Context, params *DescribeMediaParams, reqEditors ...RequestEditorFn) (*DescribeMediaResp, error)
+	DescribeMediaWithResponse(ctx context.Context, params *DescribeMediaParams) (*DescribeMediaResp, error)
 
 	// CreateUploadResourceWithBodyWithResponse request with any body
-	CreateUploadResourceWithBodyWithResponse(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResourceResp, error)
+	CreateUploadResourceWithBodyWithResponse(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader) (*CreateUploadResourceResp, error)
 
-	CreateUploadResourceWithResponse(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUploadResourceResp, error)
+	CreateUploadResourceWithResponse(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody) (*CreateUploadResourceResp, error)
 
 	// ListAsinsWithResponse request
-	ListAsinsWithResponse(ctx context.Context, params *ListAsinsParams, reqEditors ...RequestEditorFn) (*ListAsinsResp, error)
+	ListAsinsWithResponse(ctx context.Context, params *ListAsinsParams) (*ListAsinsResp, error)
 
 	// ListAdGroupsWithResponse request
-	ListAdGroupsWithResponse(ctx context.Context, params *ListAdGroupsParams, reqEditors ...RequestEditorFn) (*ListAdGroupsResp, error)
+	ListAdGroupsWithResponse(ctx context.Context, params *ListAdGroupsParams) (*ListAdGroupsResp, error)
 
 	// GetAdGroupWithResponse request
-	GetAdGroupWithResponse(ctx context.Context, adGroupId int64, params *GetAdGroupParams, reqEditors ...RequestEditorFn) (*GetAdGroupResp, error)
+	GetAdGroupWithResponse(ctx context.Context, adGroupId int64, params *GetAdGroupParams) (*GetAdGroupResp, error)
 
 	// ListCampaignsWithResponse request
-	ListCampaignsWithResponse(ctx context.Context, params *ListCampaignsParams, reqEditors ...RequestEditorFn) (*ListCampaignsResp, error)
+	ListCampaignsWithResponse(ctx context.Context, params *ListCampaignsParams) (*ListCampaignsResp, error)
 
 	// CreateCampaignsWithBodyWithResponse request with any body
-	CreateCampaignsWithBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error)
+	CreateCampaignsWithBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader) (*CreateCampaignsResp, error)
 
-	CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error)
+	CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody) (*CreateCampaignsResp, error)
 
-	CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error)
+	CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody) (*CreateCampaignsResp, error)
 
-	CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error)
+	CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody) (*CreateCampaignsResp, error)
 
 	// UpdateCampaignsWithBodyWithResponse request with any body
-	UpdateCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error)
+	UpdateCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader) (*UpdateCampaignsResp, error)
 
-	UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error)
+	UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody) (*UpdateCampaignsResp, error)
 
-	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error)
+	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody) (*UpdateCampaignsResp, error)
 
-	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error)
+	UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody) (*UpdateCampaignsResp, error)
 
 	// ArchiveCampaignWithResponse request
-	ArchiveCampaignWithResponse(ctx context.Context, campaignId int64, params *ArchiveCampaignParams, reqEditors ...RequestEditorFn) (*ArchiveCampaignResp, error)
+	ArchiveCampaignWithResponse(ctx context.Context, campaignId int64, params *ArchiveCampaignParams) (*ArchiveCampaignResp, error)
 
 	// GetCampaignWithResponse request
-	GetCampaignWithResponse(ctx context.Context, campaignId int64, params *GetCampaignParams, reqEditors ...RequestEditorFn) (*GetCampaignResp, error)
+	GetCampaignWithResponse(ctx context.Context, campaignId int64, params *GetCampaignParams) (*GetCampaignResp, error)
 
 	// ListDraftCampaignsWithResponse request
-	ListDraftCampaignsWithResponse(ctx context.Context, params *ListDraftCampaignsParams, reqEditors ...RequestEditorFn) (*ListDraftCampaignsResp, error)
+	ListDraftCampaignsWithResponse(ctx context.Context, params *ListDraftCampaignsParams) (*ListDraftCampaignsResp, error)
 
 	// CreateDraftCampaignsWithBodyWithResponse request with any body
-	CreateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error)
+	CreateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader) (*CreateDraftCampaignsResp, error)
 
-	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error)
+	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody) (*CreateDraftCampaignsResp, error)
 
-	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error)
+	CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody) (*CreateDraftCampaignsResp, error)
 
-	CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error)
+	CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*CreateDraftCampaignsResp, error)
 
 	// UpdateDraftCampaignsWithBodyWithResponse request with any body
-	UpdateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error)
+	UpdateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader) (*UpdateDraftCampaignsResp, error)
 
-	UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error)
+	UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*UpdateDraftCampaignsResp, error)
 
-	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error)
+	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody) (*UpdateDraftCampaignsResp, error)
 
-	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error)
+	UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody) (*UpdateDraftCampaignsResp, error)
 
 	// SubmitDraftCampaignWithBodyWithResponse request with any body
-	SubmitDraftCampaignWithBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitDraftCampaignResp, error)
+	SubmitDraftCampaignWithBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader) (*SubmitDraftCampaignResp, error)
 
-	SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitDraftCampaignResp, error)
+	SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody) (*SubmitDraftCampaignResp, error)
 
 	// DeleteDraftCampaignWithResponse request
-	DeleteDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams, reqEditors ...RequestEditorFn) (*DeleteDraftCampaignResp, error)
+	DeleteDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams) (*DeleteDraftCampaignResp, error)
 
 	// GetDraftCampaignWithResponse request
-	GetDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams, reqEditors ...RequestEditorFn) (*GetDraftCampaignResp, error)
+	GetDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams) (*GetDraftCampaignResp, error)
 
 	// ListKeywordsWithResponse request
-	ListKeywordsWithResponse(ctx context.Context, params *ListKeywordsParams, reqEditors ...RequestEditorFn) (*ListKeywordsResp, error)
+	ListKeywordsWithResponse(ctx context.Context, params *ListKeywordsParams) (*ListKeywordsResp, error)
 
 	// CreateKeywordsWithBodyWithResponse request with any body
-	CreateKeywordsWithBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateKeywordsResp, error)
+	CreateKeywordsWithBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader) (*CreateKeywordsResp, error)
 
-	CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateKeywordsResp, error)
+	CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*CreateKeywordsResp, error)
 
 	// UpdateKeywordsWithBodyWithResponse request with any body
-	UpdateKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateKeywordsResp, error)
+	UpdateKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader) (*UpdateKeywordsResp, error)
 
-	UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateKeywordsResp, error)
+	UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*UpdateKeywordsResp, error)
 
 	// ArchiveKeywordWithResponse request
-	ArchiveKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveKeywordParams, reqEditors ...RequestEditorFn) (*ArchiveKeywordResp, error)
+	ArchiveKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveKeywordParams) (*ArchiveKeywordResp, error)
 
 	// GetKeywordWithResponse request
-	GetKeywordWithResponse(ctx context.Context, keywordId int64, params *GetKeywordParams, reqEditors ...RequestEditorFn) (*GetKeywordResp, error)
+	GetKeywordWithResponse(ctx context.Context, keywordId int64, params *GetKeywordParams) (*GetKeywordResp, error)
 
 	// GetSbModerationCampaignsCampaignIdWithResponse request
-	GetSbModerationCampaignsCampaignIdWithResponse(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams, reqEditors ...RequestEditorFn) (*GetSbModerationCampaignsCampaignIdResp, error)
+	GetSbModerationCampaignsCampaignIdWithResponse(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams) (*GetSbModerationCampaignsCampaignIdResp, error)
 
 	// ListNegativeKeywordsWithResponse request
-	ListNegativeKeywordsWithResponse(ctx context.Context, params *ListNegativeKeywordsParams, reqEditors ...RequestEditorFn) (*ListNegativeKeywordsResp, error)
+	ListNegativeKeywordsWithResponse(ctx context.Context, params *ListNegativeKeywordsParams) (*ListNegativeKeywordsResp, error)
 
 	// CreateNegativeKeywordsWithBodyWithResponse request with any body
-	CreateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNegativeKeywordsResp, error)
+	CreateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader) (*CreateNegativeKeywordsResp, error)
 
-	CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNegativeKeywordsResp, error)
+	CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*CreateNegativeKeywordsResp, error)
 
 	// UpdateNegativeKeywordsWithBodyWithResponse request with any body
-	UpdateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNegativeKeywordsResp, error)
+	UpdateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader) (*UpdateNegativeKeywordsResp, error)
 
-	UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNegativeKeywordsResp, error)
+	UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*UpdateNegativeKeywordsResp, error)
 
 	// ArchiveNegativeKeywordWithResponse request
-	ArchiveNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams, reqEditors ...RequestEditorFn) (*ArchiveNegativeKeywordResp, error)
+	ArchiveNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams) (*ArchiveNegativeKeywordResp, error)
 
 	// GetNegativeKeywordWithResponse request
-	GetNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams, reqEditors ...RequestEditorFn) (*GetNegativeKeywordResp, error)
+	GetNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams) (*GetNegativeKeywordResp, error)
 
 	// CreateNegativeTargetsWithBodyWithResponse request with any body
-	CreateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNegativeTargetsResp, error)
+	CreateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*CreateNegativeTargetsResp, error)
 
-	CreateNegativeTargetsWithResponse(ctx context.Context, body CreateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNegativeTargetsResp, error)
+	CreateNegativeTargetsWithResponse(ctx context.Context, body CreateNegativeTargetsJSONRequestBody) (*CreateNegativeTargetsResp, error)
 
 	// UpdateNegativeTargetsWithBodyWithResponse request with any body
-	UpdateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNegativeTargetsResp, error)
+	UpdateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*UpdateNegativeTargetsResp, error)
 
-	UpdateNegativeTargetsWithResponse(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNegativeTargetsResp, error)
+	UpdateNegativeTargetsWithResponse(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody) (*UpdateNegativeTargetsResp, error)
 
 	// ListNegativeTargetsWithBodyWithResponse request with any body
-	ListNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListNegativeTargetsResp, error)
+	ListNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*ListNegativeTargetsResp, error)
 
-	ListNegativeTargetsWithResponse(ctx context.Context, body ListNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*ListNegativeTargetsResp, error)
+	ListNegativeTargetsWithResponse(ctx context.Context, body ListNegativeTargetsJSONRequestBody) (*ListNegativeTargetsResp, error)
 
 	// ArchiveNegativeTargetWithResponse request
-	ArchiveNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*ArchiveNegativeTargetResp, error)
+	ArchiveNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId) (*ArchiveNegativeTargetResp, error)
 
 	// GetNegativeTargetWithResponse request
-	GetNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*GetNegativeTargetResp, error)
+	GetNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId) (*GetNegativeTargetResp, error)
 
 	// GetBidsRecommendationsWithBodyWithResponse request with any body
-	GetBidsRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBidsRecommendationsResp, error)
+	GetBidsRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader) (*GetBidsRecommendationsResp, error)
 
-	GetBidsRecommendationsWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBidsRecommendationsResp, error)
+	GetBidsRecommendationsWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody) (*GetBidsRecommendationsResp, error)
 
 	// GetBrandRecommendationsWithBodyWithResponse request with any body
-	GetBrandRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBrandRecommendationsResp, error)
+	GetBrandRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader) (*GetBrandRecommendationsResp, error)
 
-	GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBrandRecommendationsResp, error)
+	GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody) (*GetBrandRecommendationsResp, error)
 
 	// GetTargetingCategoriesWithBodyWithResponse request with any body
-	GetTargetingCategoriesWithBodyWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetingCategoriesResp, error)
+	GetTargetingCategoriesWithBodyWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader) (*GetTargetingCategoriesResp, error)
 
-	GetTargetingCategoriesWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetingCategoriesResp, error)
+	GetTargetingCategoriesWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody) (*GetTargetingCategoriesResp, error)
 
 	// GetProductRecommendationsWithBodyWithResponse request with any body
-	GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error)
+	GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*GetProductRecommendationsResp, error)
 
-	GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error)
+	GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody) (*GetProductRecommendationsResp, error)
 
 	// CreateTargetsWithBodyWithResponse request with any body
-	CreateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTargetsResp, error)
+	CreateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*CreateTargetsResp, error)
 
-	CreateTargetsWithResponse(ctx context.Context, body CreateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTargetsResp, error)
+	CreateTargetsWithResponse(ctx context.Context, body CreateTargetsJSONRequestBody) (*CreateTargetsResp, error)
 
 	// UpdateTargetsWithBodyWithResponse request with any body
-	UpdateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTargetsResp, error)
+	UpdateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*UpdateTargetsResp, error)
 
-	UpdateTargetsWithResponse(ctx context.Context, body UpdateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTargetsResp, error)
+	UpdateTargetsWithResponse(ctx context.Context, body UpdateTargetsJSONRequestBody) (*UpdateTargetsResp, error)
 
 	// ListTargetsWithBodyWithResponse request with any body
-	ListTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListTargetsResp, error)
+	ListTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*ListTargetsResp, error)
 
-	ListTargetsWithResponse(ctx context.Context, body ListTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*ListTargetsResp, error)
+	ListTargetsWithResponse(ctx context.Context, body ListTargetsJSONRequestBody) (*ListTargetsResp, error)
 
 	// ArchiveTargetWithResponse request
-	ArchiveTargetWithResponse(ctx context.Context, targetId SBTargetId, reqEditors ...RequestEditorFn) (*ArchiveTargetResp, error)
+	ArchiveTargetWithResponse(ctx context.Context, targetId SBTargetId) (*ArchiveTargetResp, error)
 
 	// GetTargetWithResponse request
-	GetTargetWithResponse(ctx context.Context, targetId SBTargetId, params *GetTargetParams, reqEditors ...RequestEditorFn) (*GetTargetResp, error)
+	GetTargetWithResponse(ctx context.Context, targetId SBTargetId, params *GetTargetParams) (*GetTargetResp, error)
 
 	// SbCreateThemesWithBodyWithResponse request with any body
-	SbCreateThemesWithBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SbCreateThemesResp, error)
+	SbCreateThemesWithBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader) (*SbCreateThemesResp, error)
 
-	SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SbCreateThemesResp, error)
+	SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody) (*SbCreateThemesResp, error)
 
 	// SbUpdateThemesWithBodyWithResponse request with any body
-	SbUpdateThemesWithBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SbUpdateThemesResp, error)
+	SbUpdateThemesWithBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader) (*SbUpdateThemesResp, error)
 
-	SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SbUpdateThemesResp, error)
+	SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody) (*SbUpdateThemesResp, error)
 
 	// SbListThemesWithBodyWithResponse request with any body
-	SbListThemesWithBodyWithResponse(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SbListThemesResp, error)
+	SbListThemesWithBodyWithResponse(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader) (*SbListThemesResp, error)
 
-	SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SbListThemesResp, error)
+	SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody) (*SbListThemesResp, error)
 
 	// ListAssetsWithResponse request
-	ListAssetsWithResponse(ctx context.Context, params *ListAssetsParams, reqEditors ...RequestEditorFn) (*ListAssetsResp, error)
+	ListAssetsWithResponse(ctx context.Context, params *ListAssetsParams) (*ListAssetsResp, error)
 
 	// CreateAssetWithBodyWithResponse request with any body
-	CreateAssetWithBodyWithResponse(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAssetResp, error)
+	CreateAssetWithBodyWithResponse(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader) (*CreateAssetResp, error)
 
 	// PostV2HsaRecordTypeReportWithBodyWithResponse request with any body
-	PostV2HsaRecordTypeReportWithBodyWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV2HsaRecordTypeReportResp, error)
+	PostV2HsaRecordTypeReportWithBodyWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader) (*PostV2HsaRecordTypeReportResp, error)
 
-	PostV2HsaRecordTypeReportWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV2HsaRecordTypeReportResp, error)
+	PostV2HsaRecordTypeReportWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody) (*PostV2HsaRecordTypeReportResp, error)
 
 	// GetV2ReportsReportIdWithResponse request
-	GetV2ReportsReportIdWithResponse(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams, reqEditors ...RequestEditorFn) (*GetV2ReportsReportIdResp, error)
+	GetV2ReportsReportIdWithResponse(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams) (*GetV2ReportsReportIdResp, error)
 
 	// DownloadReportWithResponse request
-	DownloadReportWithResponse(ctx context.Context, reportId string, params *DownloadReportParams, reqEditors ...RequestEditorFn) (*DownloadReportResp, error)
+	DownloadReportWithResponse(ctx context.Context, reportId string, params *DownloadReportParams) (*DownloadReportResp, error)
 }
 
 type GetBrandsResp struct {
@@ -17640,8 +18512,8 @@ func (r DownloadReportResp) StatusCode() int {
 }
 
 // GetBrandsWithResponse request returning *GetBrandsResp
-func (c *ClientWithResponses) GetBrandsWithResponse(ctx context.Context, params *GetBrandsParams, reqEditors ...RequestEditorFn) (*GetBrandsResp, error) {
-	rsp, err := c.GetBrands(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetBrandsWithResponse(ctx context.Context, params *GetBrandsParams) (*GetBrandsResp, error) {
+	rsp, err := c.GetBrands(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17649,16 +18521,16 @@ func (c *ClientWithResponses) GetBrandsWithResponse(ctx context.Context, params 
 }
 
 // CompleteUploadWithBodyWithResponse request with arbitrary body returning *CompleteUploadResp
-func (c *ClientWithResponses) CompleteUploadWithBodyWithResponse(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CompleteUploadResp, error) {
-	rsp, err := c.CompleteUploadWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CompleteUploadWithBodyWithResponse(ctx context.Context, params *CompleteUploadParams, contentType string, body io.Reader) (*CompleteUploadResp, error) {
+	rsp, err := c.CompleteUploadWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCompleteUploadResp(rsp)
 }
 
-func (c *ClientWithResponses) CompleteUploadWithResponse(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody, reqEditors ...RequestEditorFn) (*CompleteUploadResp, error) {
-	rsp, err := c.CompleteUpload(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CompleteUploadWithResponse(ctx context.Context, params *CompleteUploadParams, body CompleteUploadJSONRequestBody) (*CompleteUploadResp, error) {
+	rsp, err := c.CompleteUpload(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17666,8 +18538,8 @@ func (c *ClientWithResponses) CompleteUploadWithResponse(ctx context.Context, pa
 }
 
 // DescribeMediaWithResponse request returning *DescribeMediaResp
-func (c *ClientWithResponses) DescribeMediaWithResponse(ctx context.Context, params *DescribeMediaParams, reqEditors ...RequestEditorFn) (*DescribeMediaResp, error) {
-	rsp, err := c.DescribeMedia(ctx, params, reqEditors...)
+func (c *ClientWithResponses) DescribeMediaWithResponse(ctx context.Context, params *DescribeMediaParams) (*DescribeMediaResp, error) {
+	rsp, err := c.DescribeMedia(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17675,16 +18547,16 @@ func (c *ClientWithResponses) DescribeMediaWithResponse(ctx context.Context, par
 }
 
 // CreateUploadResourceWithBodyWithResponse request with arbitrary body returning *CreateUploadResourceResp
-func (c *ClientWithResponses) CreateUploadResourceWithBodyWithResponse(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateUploadResourceResp, error) {
-	rsp, err := c.CreateUploadResourceWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateUploadResourceWithBodyWithResponse(ctx context.Context, params *CreateUploadResourceParams, contentType string, body io.Reader) (*CreateUploadResourceResp, error) {
+	rsp, err := c.CreateUploadResourceWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateUploadResourceResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateUploadResourceWithResponse(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateUploadResourceResp, error) {
-	rsp, err := c.CreateUploadResource(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateUploadResourceWithResponse(ctx context.Context, params *CreateUploadResourceParams, body CreateUploadResourceJSONRequestBody) (*CreateUploadResourceResp, error) {
+	rsp, err := c.CreateUploadResource(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17692,8 +18564,8 @@ func (c *ClientWithResponses) CreateUploadResourceWithResponse(ctx context.Conte
 }
 
 // ListAsinsWithResponse request returning *ListAsinsResp
-func (c *ClientWithResponses) ListAsinsWithResponse(ctx context.Context, params *ListAsinsParams, reqEditors ...RequestEditorFn) (*ListAsinsResp, error) {
-	rsp, err := c.ListAsins(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListAsinsWithResponse(ctx context.Context, params *ListAsinsParams) (*ListAsinsResp, error) {
+	rsp, err := c.ListAsins(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17701,8 +18573,8 @@ func (c *ClientWithResponses) ListAsinsWithResponse(ctx context.Context, params 
 }
 
 // ListAdGroupsWithResponse request returning *ListAdGroupsResp
-func (c *ClientWithResponses) ListAdGroupsWithResponse(ctx context.Context, params *ListAdGroupsParams, reqEditors ...RequestEditorFn) (*ListAdGroupsResp, error) {
-	rsp, err := c.ListAdGroups(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListAdGroupsWithResponse(ctx context.Context, params *ListAdGroupsParams) (*ListAdGroupsResp, error) {
+	rsp, err := c.ListAdGroups(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17710,8 +18582,8 @@ func (c *ClientWithResponses) ListAdGroupsWithResponse(ctx context.Context, para
 }
 
 // GetAdGroupWithResponse request returning *GetAdGroupResp
-func (c *ClientWithResponses) GetAdGroupWithResponse(ctx context.Context, adGroupId int64, params *GetAdGroupParams, reqEditors ...RequestEditorFn) (*GetAdGroupResp, error) {
-	rsp, err := c.GetAdGroup(ctx, adGroupId, params, reqEditors...)
+func (c *ClientWithResponses) GetAdGroupWithResponse(ctx context.Context, adGroupId int64, params *GetAdGroupParams) (*GetAdGroupResp, error) {
+	rsp, err := c.GetAdGroup(ctx, adGroupId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17719,8 +18591,8 @@ func (c *ClientWithResponses) GetAdGroupWithResponse(ctx context.Context, adGrou
 }
 
 // ListCampaignsWithResponse request returning *ListCampaignsResp
-func (c *ClientWithResponses) ListCampaignsWithResponse(ctx context.Context, params *ListCampaignsParams, reqEditors ...RequestEditorFn) (*ListCampaignsResp, error) {
-	rsp, err := c.ListCampaigns(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListCampaignsWithResponse(ctx context.Context, params *ListCampaignsParams) (*ListCampaignsResp, error) {
+	rsp, err := c.ListCampaigns(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17728,32 +18600,32 @@ func (c *ClientWithResponses) ListCampaignsWithResponse(ctx context.Context, par
 }
 
 // CreateCampaignsWithBodyWithResponse request with arbitrary body returning *CreateCampaignsResp
-func (c *ClientWithResponses) CreateCampaignsWithBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error) {
-	rsp, err := c.CreateCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateCampaignsWithBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, contentType string, body io.Reader) (*CreateCampaignsResp, error) {
+	rsp, err := c.CreateCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error) {
-	rsp, err := c.CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV32PlusJSONRequestBody) (*CreateCampaignsResp, error) {
+	rsp, err := c.CreateCampaignsWithApplicationVndCreatecampaignsresponseV32PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error) {
-	rsp, err := c.CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndCreatecampaignsresponseV33PlusJSONRequestBody) (*CreateCampaignsResp, error) {
+	rsp, err := c.CreateCampaignsWithApplicationVndCreatecampaignsresponseV33PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateCampaignsResp, error) {
-	rsp, err := c.CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateCampaignsParams, body CreateCampaignsApplicationVndSbcreatecampaignresponseV3PlusJSONRequestBody) (*CreateCampaignsResp, error) {
+	rsp, err := c.CreateCampaignsWithApplicationVndSbcreatecampaignresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17761,32 +18633,32 @@ func (c *ClientWithResponses) CreateCampaignsWithApplicationVndSbcreatecampaignr
 }
 
 // UpdateCampaignsWithBodyWithResponse request with arbitrary body returning *UpdateCampaignsResp
-func (c *ClientWithResponses) UpdateCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error) {
-	rsp, err := c.UpdateCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, contentType string, body io.Reader) (*UpdateCampaignsResp, error) {
+	rsp, err := c.UpdateCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error) {
-	rsp, err := c.UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndSbupdatecampaignresponseV3PlusJSONRequestBody) (*UpdateCampaignsResp, error) {
+	rsp, err := c.UpdateCampaignsWithApplicationVndSbupdatecampaignresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error) {
-	rsp, err := c.UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV32PlusJSONRequestBody) (*UpdateCampaignsResp, error) {
+	rsp, err := c.UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV32PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateCampaignsResp, error) {
-	rsp, err := c.UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateCampaignsParams, body UpdateCampaignsApplicationVndUpdatecampaignsresponseV33PlusJSONRequestBody) (*UpdateCampaignsResp, error) {
+	rsp, err := c.UpdateCampaignsWithApplicationVndUpdatecampaignsresponseV33PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17794,8 +18666,8 @@ func (c *ClientWithResponses) UpdateCampaignsWithApplicationVndUpdatecampaignsre
 }
 
 // ArchiveCampaignWithResponse request returning *ArchiveCampaignResp
-func (c *ClientWithResponses) ArchiveCampaignWithResponse(ctx context.Context, campaignId int64, params *ArchiveCampaignParams, reqEditors ...RequestEditorFn) (*ArchiveCampaignResp, error) {
-	rsp, err := c.ArchiveCampaign(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) ArchiveCampaignWithResponse(ctx context.Context, campaignId int64, params *ArchiveCampaignParams) (*ArchiveCampaignResp, error) {
+	rsp, err := c.ArchiveCampaign(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17803,8 +18675,8 @@ func (c *ClientWithResponses) ArchiveCampaignWithResponse(ctx context.Context, c
 }
 
 // GetCampaignWithResponse request returning *GetCampaignResp
-func (c *ClientWithResponses) GetCampaignWithResponse(ctx context.Context, campaignId int64, params *GetCampaignParams, reqEditors ...RequestEditorFn) (*GetCampaignResp, error) {
-	rsp, err := c.GetCampaign(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) GetCampaignWithResponse(ctx context.Context, campaignId int64, params *GetCampaignParams) (*GetCampaignResp, error) {
+	rsp, err := c.GetCampaign(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17812,8 +18684,8 @@ func (c *ClientWithResponses) GetCampaignWithResponse(ctx context.Context, campa
 }
 
 // ListDraftCampaignsWithResponse request returning *ListDraftCampaignsResp
-func (c *ClientWithResponses) ListDraftCampaignsWithResponse(ctx context.Context, params *ListDraftCampaignsParams, reqEditors ...RequestEditorFn) (*ListDraftCampaignsResp, error) {
-	rsp, err := c.ListDraftCampaigns(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListDraftCampaignsWithResponse(ctx context.Context, params *ListDraftCampaignsParams) (*ListDraftCampaignsResp, error) {
+	rsp, err := c.ListDraftCampaigns(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17821,32 +18693,32 @@ func (c *ClientWithResponses) ListDraftCampaignsWithResponse(ctx context.Context
 }
 
 // CreateDraftCampaignsWithBodyWithResponse request with arbitrary body returning *CreateDraftCampaignsResp
-func (c *ClientWithResponses) CreateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error) {
-	rsp, err := c.CreateDraftCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, contentType string, body io.Reader) (*CreateDraftCampaignsResp, error) {
+	rsp, err := c.CreateDraftCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDraftCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error) {
-	rsp, err := c.CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV32PlusJSONRequestBody) (*CreateDraftCampaignsResp, error) {
+	rsp, err := c.CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV32PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDraftCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error) {
-	rsp, err := c.CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndCreatedraftcampaignsresponseV33PlusJSONRequestBody) (*CreateDraftCampaignsResp, error) {
+	rsp, err := c.CreateDraftCampaignsWithApplicationVndCreatedraftcampaignsresponseV33PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDraftCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDraftCampaignsResp, error) {
-	rsp, err := c.CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateDraftCampaignsParams, body CreateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*CreateDraftCampaignsResp, error) {
+	rsp, err := c.CreateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17854,32 +18726,32 @@ func (c *ClientWithResponses) CreateDraftCampaignsWithApplicationVndSbdraftcampa
 }
 
 // UpdateDraftCampaignsWithBodyWithResponse request with arbitrary body returning *UpdateDraftCampaignsResp
-func (c *ClientWithResponses) UpdateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error) {
-	rsp, err := c.UpdateDraftCampaignsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDraftCampaignsWithBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, contentType string, body io.Reader) (*UpdateDraftCampaignsResp, error) {
+	rsp, err := c.UpdateDraftCampaignsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDraftCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error) {
-	rsp, err := c.UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndSbdraftcampaignresponseV3PlusJSONRequestBody) (*UpdateDraftCampaignsResp, error) {
+	rsp, err := c.UpdateDraftCampaignsWithApplicationVndSbdraftcampaignresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDraftCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error) {
-	rsp, err := c.UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV32PlusJSONRequestBody) (*UpdateDraftCampaignsResp, error) {
+	rsp, err := c.UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV32PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDraftCampaignsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDraftCampaignsResp, error) {
-	rsp, err := c.UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBodyWithResponse(ctx context.Context, params *UpdateDraftCampaignsParams, body UpdateDraftCampaignsApplicationVndUpdatedraftcampaignsresponseV33PlusJSONRequestBody) (*UpdateDraftCampaignsResp, error) {
+	rsp, err := c.UpdateDraftCampaignsWithApplicationVndUpdatedraftcampaignsresponseV33PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17887,16 +18759,16 @@ func (c *ClientWithResponses) UpdateDraftCampaignsWithApplicationVndUpdatedraftc
 }
 
 // SubmitDraftCampaignWithBodyWithResponse request with arbitrary body returning *SubmitDraftCampaignResp
-func (c *ClientWithResponses) SubmitDraftCampaignWithBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitDraftCampaignResp, error) {
-	rsp, err := c.SubmitDraftCampaignWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SubmitDraftCampaignWithBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, contentType string, body io.Reader) (*SubmitDraftCampaignResp, error) {
+	rsp, err := c.SubmitDraftCampaignWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSubmitDraftCampaignResp(rsp)
 }
 
-func (c *ClientWithResponses) SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitDraftCampaignResp, error) {
-	rsp, err := c.SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBodyWithResponse(ctx context.Context, params *SubmitDraftCampaignParams, body SubmitDraftCampaignApplicationVndSbcampaignV3PlusJSONRequestBody) (*SubmitDraftCampaignResp, error) {
+	rsp, err := c.SubmitDraftCampaignWithApplicationVndSbcampaignV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17904,8 +18776,8 @@ func (c *ClientWithResponses) SubmitDraftCampaignWithApplicationVndSbcampaignV3P
 }
 
 // DeleteDraftCampaignWithResponse request returning *DeleteDraftCampaignResp
-func (c *ClientWithResponses) DeleteDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams, reqEditors ...RequestEditorFn) (*DeleteDraftCampaignResp, error) {
-	rsp, err := c.DeleteDraftCampaign(ctx, draftCampaignId, params, reqEditors...)
+func (c *ClientWithResponses) DeleteDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *DeleteDraftCampaignParams) (*DeleteDraftCampaignResp, error) {
+	rsp, err := c.DeleteDraftCampaign(ctx, draftCampaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17913,8 +18785,8 @@ func (c *ClientWithResponses) DeleteDraftCampaignWithResponse(ctx context.Contex
 }
 
 // GetDraftCampaignWithResponse request returning *GetDraftCampaignResp
-func (c *ClientWithResponses) GetDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams, reqEditors ...RequestEditorFn) (*GetDraftCampaignResp, error) {
-	rsp, err := c.GetDraftCampaign(ctx, draftCampaignId, params, reqEditors...)
+func (c *ClientWithResponses) GetDraftCampaignWithResponse(ctx context.Context, draftCampaignId int64, params *GetDraftCampaignParams) (*GetDraftCampaignResp, error) {
+	rsp, err := c.GetDraftCampaign(ctx, draftCampaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17922,8 +18794,8 @@ func (c *ClientWithResponses) GetDraftCampaignWithResponse(ctx context.Context, 
 }
 
 // ListKeywordsWithResponse request returning *ListKeywordsResp
-func (c *ClientWithResponses) ListKeywordsWithResponse(ctx context.Context, params *ListKeywordsParams, reqEditors ...RequestEditorFn) (*ListKeywordsResp, error) {
-	rsp, err := c.ListKeywords(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListKeywordsWithResponse(ctx context.Context, params *ListKeywordsParams) (*ListKeywordsResp, error) {
+	rsp, err := c.ListKeywords(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17931,16 +18803,16 @@ func (c *ClientWithResponses) ListKeywordsWithResponse(ctx context.Context, para
 }
 
 // CreateKeywordsWithBodyWithResponse request with arbitrary body returning *CreateKeywordsResp
-func (c *ClientWithResponses) CreateKeywordsWithBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateKeywordsResp, error) {
-	rsp, err := c.CreateKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateKeywordsWithBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, contentType string, body io.Reader) (*CreateKeywordsResp, error) {
+	rsp, err := c.CreateKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateKeywordsResp, error) {
-	rsp, err := c.CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateKeywordsParams, body CreateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*CreateKeywordsResp, error) {
+	rsp, err := c.CreateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17948,16 +18820,16 @@ func (c *ClientWithResponses) CreateKeywordsWithApplicationVndSbkeywordresponseV
 }
 
 // UpdateKeywordsWithBodyWithResponse request with arbitrary body returning *UpdateKeywordsResp
-func (c *ClientWithResponses) UpdateKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateKeywordsResp, error) {
-	rsp, err := c.UpdateKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, contentType string, body io.Reader) (*UpdateKeywordsResp, error) {
+	rsp, err := c.UpdateKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateKeywordsResp, error) {
-	rsp, err := c.UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateKeywordsParams, body UpdateKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*UpdateKeywordsResp, error) {
+	rsp, err := c.UpdateKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -17965,8 +18837,8 @@ func (c *ClientWithResponses) UpdateKeywordsWithApplicationVndSbkeywordresponseV
 }
 
 // ArchiveKeywordWithResponse request returning *ArchiveKeywordResp
-func (c *ClientWithResponses) ArchiveKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveKeywordParams, reqEditors ...RequestEditorFn) (*ArchiveKeywordResp, error) {
-	rsp, err := c.ArchiveKeyword(ctx, keywordId, params, reqEditors...)
+func (c *ClientWithResponses) ArchiveKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveKeywordParams) (*ArchiveKeywordResp, error) {
+	rsp, err := c.ArchiveKeyword(ctx, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17974,8 +18846,8 @@ func (c *ClientWithResponses) ArchiveKeywordWithResponse(ctx context.Context, ke
 }
 
 // GetKeywordWithResponse request returning *GetKeywordResp
-func (c *ClientWithResponses) GetKeywordWithResponse(ctx context.Context, keywordId int64, params *GetKeywordParams, reqEditors ...RequestEditorFn) (*GetKeywordResp, error) {
-	rsp, err := c.GetKeyword(ctx, keywordId, params, reqEditors...)
+func (c *ClientWithResponses) GetKeywordWithResponse(ctx context.Context, keywordId int64, params *GetKeywordParams) (*GetKeywordResp, error) {
+	rsp, err := c.GetKeyword(ctx, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17983,8 +18855,8 @@ func (c *ClientWithResponses) GetKeywordWithResponse(ctx context.Context, keywor
 }
 
 // GetSbModerationCampaignsCampaignIdWithResponse request returning *GetSbModerationCampaignsCampaignIdResp
-func (c *ClientWithResponses) GetSbModerationCampaignsCampaignIdWithResponse(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams, reqEditors ...RequestEditorFn) (*GetSbModerationCampaignsCampaignIdResp, error) {
-	rsp, err := c.GetSbModerationCampaignsCampaignId(ctx, campaignId, params, reqEditors...)
+func (c *ClientWithResponses) GetSbModerationCampaignsCampaignIdWithResponse(ctx context.Context, campaignId int64, params *GetSbModerationCampaignsCampaignIdParams) (*GetSbModerationCampaignsCampaignIdResp, error) {
+	rsp, err := c.GetSbModerationCampaignsCampaignId(ctx, campaignId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -17992,8 +18864,8 @@ func (c *ClientWithResponses) GetSbModerationCampaignsCampaignIdWithResponse(ctx
 }
 
 // ListNegativeKeywordsWithResponse request returning *ListNegativeKeywordsResp
-func (c *ClientWithResponses) ListNegativeKeywordsWithResponse(ctx context.Context, params *ListNegativeKeywordsParams, reqEditors ...RequestEditorFn) (*ListNegativeKeywordsResp, error) {
-	rsp, err := c.ListNegativeKeywords(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListNegativeKeywordsWithResponse(ctx context.Context, params *ListNegativeKeywordsParams) (*ListNegativeKeywordsResp, error) {
+	rsp, err := c.ListNegativeKeywords(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18001,16 +18873,16 @@ func (c *ClientWithResponses) ListNegativeKeywordsWithResponse(ctx context.Conte
 }
 
 // CreateNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *CreateNegativeKeywordsResp
-func (c *ClientWithResponses) CreateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNegativeKeywordsResp, error) {
-	rsp, err := c.CreateNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, contentType string, body io.Reader) (*CreateNegativeKeywordsResp, error) {
+	rsp, err := c.CreateNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNegativeKeywordsResp, error) {
-	rsp, err := c.CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *CreateNegativeKeywordsParams, body CreateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*CreateNegativeKeywordsResp, error) {
+	rsp, err := c.CreateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18018,16 +18890,16 @@ func (c *ClientWithResponses) CreateNegativeKeywordsWithApplicationVndSbkeywordr
 }
 
 // UpdateNegativeKeywordsWithBodyWithResponse request with arbitrary body returning *UpdateNegativeKeywordsResp
-func (c *ClientWithResponses) UpdateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNegativeKeywordsResp, error) {
-	rsp, err := c.UpdateNegativeKeywordsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateNegativeKeywordsWithBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, contentType string, body io.Reader) (*UpdateNegativeKeywordsResp, error) {
+	rsp, err := c.UpdateNegativeKeywordsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateNegativeKeywordsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNegativeKeywordsResp, error) {
-	rsp, err := c.UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBodyWithResponse(ctx context.Context, params *UpdateNegativeKeywordsParams, body UpdateNegativeKeywordsApplicationVndSbkeywordresponseV3PlusJSONRequestBody) (*UpdateNegativeKeywordsResp, error) {
+	rsp, err := c.UpdateNegativeKeywordsWithApplicationVndSbkeywordresponseV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18035,8 +18907,8 @@ func (c *ClientWithResponses) UpdateNegativeKeywordsWithApplicationVndSbkeywordr
 }
 
 // ArchiveNegativeKeywordWithResponse request returning *ArchiveNegativeKeywordResp
-func (c *ClientWithResponses) ArchiveNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams, reqEditors ...RequestEditorFn) (*ArchiveNegativeKeywordResp, error) {
-	rsp, err := c.ArchiveNegativeKeyword(ctx, keywordId, params, reqEditors...)
+func (c *ClientWithResponses) ArchiveNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *ArchiveNegativeKeywordParams) (*ArchiveNegativeKeywordResp, error) {
+	rsp, err := c.ArchiveNegativeKeyword(ctx, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18044,8 +18916,8 @@ func (c *ClientWithResponses) ArchiveNegativeKeywordWithResponse(ctx context.Con
 }
 
 // GetNegativeKeywordWithResponse request returning *GetNegativeKeywordResp
-func (c *ClientWithResponses) GetNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams, reqEditors ...RequestEditorFn) (*GetNegativeKeywordResp, error) {
-	rsp, err := c.GetNegativeKeyword(ctx, keywordId, params, reqEditors...)
+func (c *ClientWithResponses) GetNegativeKeywordWithResponse(ctx context.Context, keywordId int64, params *GetNegativeKeywordParams) (*GetNegativeKeywordResp, error) {
+	rsp, err := c.GetNegativeKeyword(ctx, keywordId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18053,16 +18925,16 @@ func (c *ClientWithResponses) GetNegativeKeywordWithResponse(ctx context.Context
 }
 
 // CreateNegativeTargetsWithBodyWithResponse request with arbitrary body returning *CreateNegativeTargetsResp
-func (c *ClientWithResponses) CreateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateNegativeTargetsResp, error) {
-	rsp, err := c.CreateNegativeTargetsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*CreateNegativeTargetsResp, error) {
+	rsp, err := c.CreateNegativeTargetsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateNegativeTargetsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateNegativeTargetsWithResponse(ctx context.Context, body CreateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateNegativeTargetsResp, error) {
-	rsp, err := c.CreateNegativeTargets(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateNegativeTargetsWithResponse(ctx context.Context, body CreateNegativeTargetsJSONRequestBody) (*CreateNegativeTargetsResp, error) {
+	rsp, err := c.CreateNegativeTargets(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18070,16 +18942,16 @@ func (c *ClientWithResponses) CreateNegativeTargetsWithResponse(ctx context.Cont
 }
 
 // UpdateNegativeTargetsWithBodyWithResponse request with arbitrary body returning *UpdateNegativeTargetsResp
-func (c *ClientWithResponses) UpdateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateNegativeTargetsResp, error) {
-	rsp, err := c.UpdateNegativeTargetsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*UpdateNegativeTargetsResp, error) {
+	rsp, err := c.UpdateNegativeTargetsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateNegativeTargetsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateNegativeTargetsWithResponse(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateNegativeTargetsResp, error) {
-	rsp, err := c.UpdateNegativeTargets(ctx, body, reqEditors...)
+func (c *ClientWithResponses) UpdateNegativeTargetsWithResponse(ctx context.Context, body UpdateNegativeTargetsJSONRequestBody) (*UpdateNegativeTargetsResp, error) {
+	rsp, err := c.UpdateNegativeTargets(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18087,16 +18959,16 @@ func (c *ClientWithResponses) UpdateNegativeTargetsWithResponse(ctx context.Cont
 }
 
 // ListNegativeTargetsWithBodyWithResponse request with arbitrary body returning *ListNegativeTargetsResp
-func (c *ClientWithResponses) ListNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListNegativeTargetsResp, error) {
-	rsp, err := c.ListNegativeTargetsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListNegativeTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*ListNegativeTargetsResp, error) {
+	rsp, err := c.ListNegativeTargetsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListNegativeTargetsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListNegativeTargetsWithResponse(ctx context.Context, body ListNegativeTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*ListNegativeTargetsResp, error) {
-	rsp, err := c.ListNegativeTargets(ctx, body, reqEditors...)
+func (c *ClientWithResponses) ListNegativeTargetsWithResponse(ctx context.Context, body ListNegativeTargetsJSONRequestBody) (*ListNegativeTargetsResp, error) {
+	rsp, err := c.ListNegativeTargets(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18104,8 +18976,8 @@ func (c *ClientWithResponses) ListNegativeTargetsWithResponse(ctx context.Contex
 }
 
 // ArchiveNegativeTargetWithResponse request returning *ArchiveNegativeTargetResp
-func (c *ClientWithResponses) ArchiveNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*ArchiveNegativeTargetResp, error) {
-	rsp, err := c.ArchiveNegativeTarget(ctx, negativeTargetId, reqEditors...)
+func (c *ClientWithResponses) ArchiveNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId) (*ArchiveNegativeTargetResp, error) {
+	rsp, err := c.ArchiveNegativeTarget(ctx, negativeTargetId)
 	if err != nil {
 		return nil, err
 	}
@@ -18113,8 +18985,8 @@ func (c *ClientWithResponses) ArchiveNegativeTargetWithResponse(ctx context.Cont
 }
 
 // GetNegativeTargetWithResponse request returning *GetNegativeTargetResp
-func (c *ClientWithResponses) GetNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId, reqEditors ...RequestEditorFn) (*GetNegativeTargetResp, error) {
-	rsp, err := c.GetNegativeTarget(ctx, negativeTargetId, reqEditors...)
+func (c *ClientWithResponses) GetNegativeTargetWithResponse(ctx context.Context, negativeTargetId SBNegativeTargetId) (*GetNegativeTargetResp, error) {
+	rsp, err := c.GetNegativeTarget(ctx, negativeTargetId)
 	if err != nil {
 		return nil, err
 	}
@@ -18122,16 +18994,16 @@ func (c *ClientWithResponses) GetNegativeTargetWithResponse(ctx context.Context,
 }
 
 // GetBidsRecommendationsWithBodyWithResponse request with arbitrary body returning *GetBidsRecommendationsResp
-func (c *ClientWithResponses) GetBidsRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBidsRecommendationsResp, error) {
-	rsp, err := c.GetBidsRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetBidsRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, contentType string, body io.Reader) (*GetBidsRecommendationsResp, error) {
+	rsp, err := c.GetBidsRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetBidsRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetBidsRecommendationsWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBidsRecommendationsResp, error) {
-	rsp, err := c.GetBidsRecommendations(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetBidsRecommendationsWithResponse(ctx context.Context, params *GetBidsRecommendationsParams, body GetBidsRecommendationsJSONRequestBody) (*GetBidsRecommendationsResp, error) {
+	rsp, err := c.GetBidsRecommendations(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18139,16 +19011,16 @@ func (c *ClientWithResponses) GetBidsRecommendationsWithResponse(ctx context.Con
 }
 
 // GetBrandRecommendationsWithBodyWithResponse request with arbitrary body returning *GetBrandRecommendationsResp
-func (c *ClientWithResponses) GetBrandRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetBrandRecommendationsResp, error) {
-	rsp, err := c.GetBrandRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetBrandRecommendationsWithBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, contentType string, body io.Reader) (*GetBrandRecommendationsResp, error) {
+	rsp, err := c.GetBrandRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetBrandRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetBrandRecommendationsResp, error) {
-	rsp, err := c.GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetBrandRecommendationsParams, body GetBrandRecommendationsApplicationVndSbbrandrecommendationsV30PlusJSONRequestBody) (*GetBrandRecommendationsResp, error) {
+	rsp, err := c.GetBrandRecommendationsWithApplicationVndSbbrandrecommendationsV30PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18156,16 +19028,16 @@ func (c *ClientWithResponses) GetBrandRecommendationsWithApplicationVndSbbrandre
 }
 
 // GetTargetingCategoriesWithBodyWithResponse request with arbitrary body returning *GetTargetingCategoriesResp
-func (c *ClientWithResponses) GetTargetingCategoriesWithBodyWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetTargetingCategoriesResp, error) {
-	rsp, err := c.GetTargetingCategoriesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetingCategoriesWithBodyWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, contentType string, body io.Reader) (*GetTargetingCategoriesResp, error) {
+	rsp, err := c.GetTargetingCategoriesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetTargetingCategoriesResp(rsp)
 }
 
-func (c *ClientWithResponses) GetTargetingCategoriesWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody, reqEditors ...RequestEditorFn) (*GetTargetingCategoriesResp, error) {
-	rsp, err := c.GetTargetingCategories(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetTargetingCategoriesWithResponse(ctx context.Context, params *GetTargetingCategoriesParams, body GetTargetingCategoriesJSONRequestBody) (*GetTargetingCategoriesResp, error) {
+	rsp, err := c.GetTargetingCategories(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18173,16 +19045,16 @@ func (c *ClientWithResponses) GetTargetingCategoriesWithResponse(ctx context.Con
 }
 
 // GetProductRecommendationsWithBodyWithResponse request with arbitrary body returning *GetProductRecommendationsResp
-func (c *ClientWithResponses) GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error) {
-	rsp, err := c.GetProductRecommendationsWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GetProductRecommendationsWithBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, contentType string, body io.Reader) (*GetProductRecommendationsResp, error) {
+	rsp, err := c.GetProductRecommendationsWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGetProductRecommendationsResp(rsp)
 }
 
-func (c *ClientWithResponses) GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GetProductRecommendationsResp, error) {
-	rsp, err := c.GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBodyWithResponse(ctx context.Context, params *GetProductRecommendationsParams, body GetProductRecommendationsApplicationVndSbproductrecommendationsV30PlusJSONRequestBody) (*GetProductRecommendationsResp, error) {
+	rsp, err := c.GetProductRecommendationsWithApplicationVndSbproductrecommendationsV30PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18190,16 +19062,16 @@ func (c *ClientWithResponses) GetProductRecommendationsWithApplicationVndSbprodu
 }
 
 // CreateTargetsWithBodyWithResponse request with arbitrary body returning *CreateTargetsResp
-func (c *ClientWithResponses) CreateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateTargetsResp, error) {
-	rsp, err := c.CreateTargetsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*CreateTargetsResp, error) {
+	rsp, err := c.CreateTargetsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateTargetsResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateTargetsWithResponse(ctx context.Context, body CreateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateTargetsResp, error) {
-	rsp, err := c.CreateTargets(ctx, body, reqEditors...)
+func (c *ClientWithResponses) CreateTargetsWithResponse(ctx context.Context, body CreateTargetsJSONRequestBody) (*CreateTargetsResp, error) {
+	rsp, err := c.CreateTargets(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18207,16 +19079,16 @@ func (c *ClientWithResponses) CreateTargetsWithResponse(ctx context.Context, bod
 }
 
 // UpdateTargetsWithBodyWithResponse request with arbitrary body returning *UpdateTargetsResp
-func (c *ClientWithResponses) UpdateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateTargetsResp, error) {
-	rsp, err := c.UpdateTargetsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*UpdateTargetsResp, error) {
+	rsp, err := c.UpdateTargetsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateTargetsResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateTargetsWithResponse(ctx context.Context, body UpdateTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateTargetsResp, error) {
-	rsp, err := c.UpdateTargets(ctx, body, reqEditors...)
+func (c *ClientWithResponses) UpdateTargetsWithResponse(ctx context.Context, body UpdateTargetsJSONRequestBody) (*UpdateTargetsResp, error) {
+	rsp, err := c.UpdateTargets(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18224,16 +19096,16 @@ func (c *ClientWithResponses) UpdateTargetsWithResponse(ctx context.Context, bod
 }
 
 // ListTargetsWithBodyWithResponse request with arbitrary body returning *ListTargetsResp
-func (c *ClientWithResponses) ListTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListTargetsResp, error) {
-	rsp, err := c.ListTargetsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListTargetsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*ListTargetsResp, error) {
+	rsp, err := c.ListTargetsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListTargetsResp(rsp)
 }
 
-func (c *ClientWithResponses) ListTargetsWithResponse(ctx context.Context, body ListTargetsJSONRequestBody, reqEditors ...RequestEditorFn) (*ListTargetsResp, error) {
-	rsp, err := c.ListTargets(ctx, body, reqEditors...)
+func (c *ClientWithResponses) ListTargetsWithResponse(ctx context.Context, body ListTargetsJSONRequestBody) (*ListTargetsResp, error) {
+	rsp, err := c.ListTargets(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18241,8 +19113,8 @@ func (c *ClientWithResponses) ListTargetsWithResponse(ctx context.Context, body 
 }
 
 // ArchiveTargetWithResponse request returning *ArchiveTargetResp
-func (c *ClientWithResponses) ArchiveTargetWithResponse(ctx context.Context, targetId SBTargetId, reqEditors ...RequestEditorFn) (*ArchiveTargetResp, error) {
-	rsp, err := c.ArchiveTarget(ctx, targetId, reqEditors...)
+func (c *ClientWithResponses) ArchiveTargetWithResponse(ctx context.Context, targetId SBTargetId) (*ArchiveTargetResp, error) {
+	rsp, err := c.ArchiveTarget(ctx, targetId)
 	if err != nil {
 		return nil, err
 	}
@@ -18250,8 +19122,8 @@ func (c *ClientWithResponses) ArchiveTargetWithResponse(ctx context.Context, tar
 }
 
 // GetTargetWithResponse request returning *GetTargetResp
-func (c *ClientWithResponses) GetTargetWithResponse(ctx context.Context, targetId SBTargetId, params *GetTargetParams, reqEditors ...RequestEditorFn) (*GetTargetResp, error) {
-	rsp, err := c.GetTarget(ctx, targetId, params, reqEditors...)
+func (c *ClientWithResponses) GetTargetWithResponse(ctx context.Context, targetId SBTargetId, params *GetTargetParams) (*GetTargetResp, error) {
+	rsp, err := c.GetTarget(ctx, targetId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18259,16 +19131,16 @@ func (c *ClientWithResponses) GetTargetWithResponse(ctx context.Context, targetI
 }
 
 // SbCreateThemesWithBodyWithResponse request with arbitrary body returning *SbCreateThemesResp
-func (c *ClientWithResponses) SbCreateThemesWithBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SbCreateThemesResp, error) {
-	rsp, err := c.SbCreateThemesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SbCreateThemesWithBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, contentType string, body io.Reader) (*SbCreateThemesResp, error) {
+	rsp, err := c.SbCreateThemesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSbCreateThemesResp(rsp)
 }
 
-func (c *ClientWithResponses) SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SbCreateThemesResp, error) {
-	rsp, err := c.SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbCreateThemesParams, body SbCreateThemesApplicationVndSbthemescreaterequestV3PlusJSONRequestBody) (*SbCreateThemesResp, error) {
+	rsp, err := c.SbCreateThemesWithApplicationVndSbthemescreaterequestV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18276,16 +19148,16 @@ func (c *ClientWithResponses) SbCreateThemesWithApplicationVndSbthemescreaterequ
 }
 
 // SbUpdateThemesWithBodyWithResponse request with arbitrary body returning *SbUpdateThemesResp
-func (c *ClientWithResponses) SbUpdateThemesWithBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SbUpdateThemesResp, error) {
-	rsp, err := c.SbUpdateThemesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SbUpdateThemesWithBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, contentType string, body io.Reader) (*SbUpdateThemesResp, error) {
+	rsp, err := c.SbUpdateThemesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSbUpdateThemesResp(rsp)
 }
 
-func (c *ClientWithResponses) SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SbUpdateThemesResp, error) {
-	rsp, err := c.SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbUpdateThemesParams, body SbUpdateThemesApplicationVndSbathemessupdaterequestV3PlusJSONRequestBody) (*SbUpdateThemesResp, error) {
+	rsp, err := c.SbUpdateThemesWithApplicationVndSbathemessupdaterequestV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18293,16 +19165,16 @@ func (c *ClientWithResponses) SbUpdateThemesWithApplicationVndSbathemessupdatere
 }
 
 // SbListThemesWithBodyWithResponse request with arbitrary body returning *SbListThemesResp
-func (c *ClientWithResponses) SbListThemesWithBodyWithResponse(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SbListThemesResp, error) {
-	rsp, err := c.SbListThemesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) SbListThemesWithBodyWithResponse(ctx context.Context, params *SbListThemesParams, contentType string, body io.Reader) (*SbListThemesResp, error) {
+	rsp, err := c.SbListThemesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseSbListThemesResp(rsp)
 }
 
-func (c *ClientWithResponses) SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*SbListThemesResp, error) {
-	rsp, err := c.SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBodyWithResponse(ctx context.Context, params *SbListThemesParams, body SbListThemesApplicationVndSbthemeslistrequestV3PlusJSONRequestBody) (*SbListThemesResp, error) {
+	rsp, err := c.SbListThemesWithApplicationVndSbthemeslistrequestV3PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18310,8 +19182,8 @@ func (c *ClientWithResponses) SbListThemesWithApplicationVndSbthemeslistrequestV
 }
 
 // ListAssetsWithResponse request returning *ListAssetsResp
-func (c *ClientWithResponses) ListAssetsWithResponse(ctx context.Context, params *ListAssetsParams, reqEditors ...RequestEditorFn) (*ListAssetsResp, error) {
-	rsp, err := c.ListAssets(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListAssetsWithResponse(ctx context.Context, params *ListAssetsParams) (*ListAssetsResp, error) {
+	rsp, err := c.ListAssets(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18319,8 +19191,8 @@ func (c *ClientWithResponses) ListAssetsWithResponse(ctx context.Context, params
 }
 
 // CreateAssetWithBodyWithResponse request with arbitrary body returning *CreateAssetResp
-func (c *ClientWithResponses) CreateAssetWithBodyWithResponse(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAssetResp, error) {
-	rsp, err := c.CreateAssetWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateAssetWithBodyWithResponse(ctx context.Context, params *CreateAssetParams, contentType string, body io.Reader) (*CreateAssetResp, error) {
+	rsp, err := c.CreateAssetWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18328,16 +19200,16 @@ func (c *ClientWithResponses) CreateAssetWithBodyWithResponse(ctx context.Contex
 }
 
 // PostV2HsaRecordTypeReportWithBodyWithResponse request with arbitrary body returning *PostV2HsaRecordTypeReportResp
-func (c *ClientWithResponses) PostV2HsaRecordTypeReportWithBodyWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV2HsaRecordTypeReportResp, error) {
-	rsp, err := c.PostV2HsaRecordTypeReportWithBody(ctx, recordType, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PostV2HsaRecordTypeReportWithBodyWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, contentType string, body io.Reader) (*PostV2HsaRecordTypeReportResp, error) {
+	rsp, err := c.PostV2HsaRecordTypeReportWithBody(ctx, recordType, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePostV2HsaRecordTypeReportResp(rsp)
 }
 
-func (c *ClientWithResponses) PostV2HsaRecordTypeReportWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV2HsaRecordTypeReportResp, error) {
-	rsp, err := c.PostV2HsaRecordTypeReport(ctx, recordType, params, body, reqEditors...)
+func (c *ClientWithResponses) PostV2HsaRecordTypeReportWithResponse(ctx context.Context, recordType string, params *PostV2HsaRecordTypeReportParams, body PostV2HsaRecordTypeReportJSONRequestBody) (*PostV2HsaRecordTypeReportResp, error) {
+	rsp, err := c.PostV2HsaRecordTypeReport(ctx, recordType, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -18345,8 +19217,8 @@ func (c *ClientWithResponses) PostV2HsaRecordTypeReportWithResponse(ctx context.
 }
 
 // GetV2ReportsReportIdWithResponse request returning *GetV2ReportsReportIdResp
-func (c *ClientWithResponses) GetV2ReportsReportIdWithResponse(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams, reqEditors ...RequestEditorFn) (*GetV2ReportsReportIdResp, error) {
-	rsp, err := c.GetV2ReportsReportId(ctx, reportId, params, reqEditors...)
+func (c *ClientWithResponses) GetV2ReportsReportIdWithResponse(ctx context.Context, reportId string, params *GetV2ReportsReportIdParams) (*GetV2ReportsReportIdResp, error) {
+	rsp, err := c.GetV2ReportsReportId(ctx, reportId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -18354,8 +19226,8 @@ func (c *ClientWithResponses) GetV2ReportsReportIdWithResponse(ctx context.Conte
 }
 
 // DownloadReportWithResponse request returning *DownloadReportResp
-func (c *ClientWithResponses) DownloadReportWithResponse(ctx context.Context, reportId string, params *DownloadReportParams, reqEditors ...RequestEditorFn) (*DownloadReportResp, error) {
-	rsp, err := c.DownloadReport(ctx, reportId, params, reqEditors...)
+func (c *ClientWithResponses) DownloadReportWithResponse(ctx context.Context, reportId string, params *DownloadReportParams) (*DownloadReportResp, error) {
+	rsp, err := c.DownloadReport(ctx, reportId, params)
 	if err != nil {
 		return nil, err
 	}

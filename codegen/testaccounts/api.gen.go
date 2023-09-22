@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for CreateAccountRequestAccountType.
@@ -163,8 +164,11 @@ type CreateAccountParams struct {
 // CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
 type CreateAccountJSONRequestBody = CreateAccountRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -188,6 +192,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -213,6 +224,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -234,51 +249,84 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetAccountInformation request
-	GetAccountInformation(ctx context.Context, params *GetAccountInformationParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAccountInformation(ctx context.Context, params *GetAccountInformationParams) (*http.Response, error)
 
 	// CreateAccountWithBody request with any body
-	CreateAccountWithBody(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAccountWithBody(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateAccount(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateAccount(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) GetAccountInformation(ctx context.Context, params *GetAccountInformationParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAccountInformation(ctx context.Context, params *GetAccountInformationParams) (*http.Response, error) {
 	req, err := NewGetAccountInformationRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAccountWithBody(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAccountWithBody(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateAccountRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateAccount(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateAccount(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateAccountRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGetAccountInformationRequest generates requests for GetAccountInformation
@@ -311,9 +359,11 @@ func NewGetAccountInformationRequest(server string, params *GetAccountInformatio
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -396,13 +446,8 @@ func NewCreateAccountRequestWithBody(server string, params *CreateAccountParams,
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -410,7 +455,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -440,12 +492,12 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetAccountInformationWithResponse request
-	GetAccountInformationWithResponse(ctx context.Context, params *GetAccountInformationParams, reqEditors ...RequestEditorFn) (*GetAccountInformationResp, error)
+	GetAccountInformationWithResponse(ctx context.Context, params *GetAccountInformationParams) (*GetAccountInformationResp, error)
 
 	// CreateAccountWithBodyWithResponse request with any body
-	CreateAccountWithBodyWithResponse(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAccountResp, error)
+	CreateAccountWithBodyWithResponse(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader) (*CreateAccountResp, error)
 
-	CreateAccountWithResponse(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccountResp, error)
+	CreateAccountWithResponse(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody) (*CreateAccountResp, error)
 }
 
 type GetAccountInformationResp struct {
@@ -505,8 +557,8 @@ func (r CreateAccountResp) StatusCode() int {
 }
 
 // GetAccountInformationWithResponse request returning *GetAccountInformationResp
-func (c *ClientWithResponses) GetAccountInformationWithResponse(ctx context.Context, params *GetAccountInformationParams, reqEditors ...RequestEditorFn) (*GetAccountInformationResp, error) {
-	rsp, err := c.GetAccountInformation(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetAccountInformationWithResponse(ctx context.Context, params *GetAccountInformationParams) (*GetAccountInformationResp, error) {
+	rsp, err := c.GetAccountInformation(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -514,16 +566,16 @@ func (c *ClientWithResponses) GetAccountInformationWithResponse(ctx context.Cont
 }
 
 // CreateAccountWithBodyWithResponse request with arbitrary body returning *CreateAccountResp
-func (c *ClientWithResponses) CreateAccountWithBodyWithResponse(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateAccountResp, error) {
-	rsp, err := c.CreateAccountWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateAccountWithBodyWithResponse(ctx context.Context, params *CreateAccountParams, contentType string, body io.Reader) (*CreateAccountResp, error) {
+	rsp, err := c.CreateAccountWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateAccountResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateAccountWithResponse(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateAccountResp, error) {
-	rsp, err := c.CreateAccount(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateAccountWithResponse(ctx context.Context, params *CreateAccountParams, body CreateAccountJSONRequestBody) (*CreateAccountResp, error) {
+	rsp, err := c.CreateAccount(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

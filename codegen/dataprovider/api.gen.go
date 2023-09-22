@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AudienceFeesCurrency.
@@ -350,8 +351,11 @@ type PutV2DpAudiencemetadataAudienceIdJSONRequestBody PutV2DpAudiencemetadataAud
 // PatchV2DpUsersJSONRequestBody defines body for PatchV2DpUsers for application/json ContentType.
 type PatchV2DpUsersJSONRequestBody PatchV2DpUsersJSONBody
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -375,6 +379,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -400,6 +411,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -421,138 +436,219 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// PatchV2DpAudienceWithBody request with any body
-	PatchV2DpAudienceWithBody(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PatchV2DpAudienceWithBody(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader) (*http.Response, error)
 
-	PatchV2DpAudience(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PatchV2DpAudience(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody) (*http.Response, error)
 
 	// PostV2DpAudiencemetadataWithBody request with any body
-	PostV2DpAudiencemetadataWithBody(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostV2DpAudiencemetadataWithBody(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader) (*http.Response, error)
 
-	PostV2DpAudiencemetadata(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostV2DpAudiencemetadata(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody) (*http.Response, error)
 
 	// GetV2DpAudiencemetadataAudienceId request
-	GetV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams) (*http.Response, error)
 
 	// PutV2DpAudiencemetadataAudienceIdWithBody request with any body
-	PutV2DpAudiencemetadataAudienceIdWithBody(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PutV2DpAudiencemetadataAudienceIdWithBody(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader) (*http.Response, error)
 
-	PutV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PutV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody) (*http.Response, error)
 
 	// PatchV2DpUsersWithBody request with any body
-	PatchV2DpUsersWithBody(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PatchV2DpUsersWithBody(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader) (*http.Response, error)
 
-	PatchV2DpUsers(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PatchV2DpUsers(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) PatchV2DpAudienceWithBody(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PatchV2DpAudienceWithBody(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewPatchV2DpAudienceRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PatchV2DpAudience(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PatchV2DpAudience(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody) (*http.Response, error) {
 	req, err := NewPatchV2DpAudienceRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PostV2DpAudiencemetadataWithBody(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PostV2DpAudiencemetadataWithBody(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewPostV2DpAudiencemetadataRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PostV2DpAudiencemetadata(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PostV2DpAudiencemetadata(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody) (*http.Response, error) {
 	req, err := NewPostV2DpAudiencemetadataRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams) (*http.Response, error) {
 	req, err := NewGetV2DpAudiencemetadataAudienceIdRequest(c.Server, audienceId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PutV2DpAudiencemetadataAudienceIdWithBody(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PutV2DpAudiencemetadataAudienceIdWithBody(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewPutV2DpAudiencemetadataAudienceIdRequestWithBody(c.Server, audienceId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PutV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PutV2DpAudiencemetadataAudienceId(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody) (*http.Response, error) {
 	req, err := NewPutV2DpAudiencemetadataAudienceIdRequest(c.Server, audienceId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PatchV2DpUsersWithBody(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PatchV2DpUsersWithBody(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewPatchV2DpUsersRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) PatchV2DpUsers(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) PatchV2DpUsers(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody) (*http.Response, error) {
 	req, err := NewPatchV2DpUsersRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewPatchV2DpAudienceRequest calls the generic PatchV2DpAudience builder with application/json body
@@ -911,13 +1007,8 @@ func NewPatchV2DpUsersRequestWithBody(server string, params *PatchV2DpUsersParam
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -925,7 +1016,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -955,27 +1053,27 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// PatchV2DpAudienceWithBodyWithResponse request with any body
-	PatchV2DpAudienceWithBodyWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchV2DpAudienceResp, error)
+	PatchV2DpAudienceWithBodyWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader) (*PatchV2DpAudienceResp, error)
 
-	PatchV2DpAudienceWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchV2DpAudienceResp, error)
+	PatchV2DpAudienceWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody) (*PatchV2DpAudienceResp, error)
 
 	// PostV2DpAudiencemetadataWithBodyWithResponse request with any body
-	PostV2DpAudiencemetadataWithBodyWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV2DpAudiencemetadataResp, error)
+	PostV2DpAudiencemetadataWithBodyWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader) (*PostV2DpAudiencemetadataResp, error)
 
-	PostV2DpAudiencemetadataWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV2DpAudiencemetadataResp, error)
+	PostV2DpAudiencemetadataWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody) (*PostV2DpAudiencemetadataResp, error)
 
 	// GetV2DpAudiencemetadataAudienceIdWithResponse request
-	GetV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams, reqEditors ...RequestEditorFn) (*GetV2DpAudiencemetadataAudienceIdResp, error)
+	GetV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams) (*GetV2DpAudiencemetadataAudienceIdResp, error)
 
 	// PutV2DpAudiencemetadataAudienceIdWithBodyWithResponse request with any body
-	PutV2DpAudiencemetadataAudienceIdWithBodyWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutV2DpAudiencemetadataAudienceIdResp, error)
+	PutV2DpAudiencemetadataAudienceIdWithBodyWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader) (*PutV2DpAudiencemetadataAudienceIdResp, error)
 
-	PutV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutV2DpAudiencemetadataAudienceIdResp, error)
+	PutV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody) (*PutV2DpAudiencemetadataAudienceIdResp, error)
 
 	// PatchV2DpUsersWithBodyWithResponse request with any body
-	PatchV2DpUsersWithBodyWithResponse(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchV2DpUsersResp, error)
+	PatchV2DpUsersWithBodyWithResponse(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader) (*PatchV2DpUsersResp, error)
 
-	PatchV2DpUsersWithResponse(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchV2DpUsersResp, error)
+	PatchV2DpUsersWithResponse(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody) (*PatchV2DpUsersResp, error)
 }
 
 type PatchV2DpAudienceResp struct {
@@ -1350,16 +1448,16 @@ func (r PatchV2DpUsersResp) StatusCode() int {
 }
 
 // PatchV2DpAudienceWithBodyWithResponse request with arbitrary body returning *PatchV2DpAudienceResp
-func (c *ClientWithResponses) PatchV2DpAudienceWithBodyWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchV2DpAudienceResp, error) {
-	rsp, err := c.PatchV2DpAudienceWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PatchV2DpAudienceWithBodyWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, contentType string, body io.Reader) (*PatchV2DpAudienceResp, error) {
+	rsp, err := c.PatchV2DpAudienceWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePatchV2DpAudienceResp(rsp)
 }
 
-func (c *ClientWithResponses) PatchV2DpAudienceWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchV2DpAudienceResp, error) {
-	rsp, err := c.PatchV2DpAudience(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) PatchV2DpAudienceWithResponse(ctx context.Context, params *PatchV2DpAudienceParams, body PatchV2DpAudienceJSONRequestBody) (*PatchV2DpAudienceResp, error) {
+	rsp, err := c.PatchV2DpAudience(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1367,16 +1465,16 @@ func (c *ClientWithResponses) PatchV2DpAudienceWithResponse(ctx context.Context,
 }
 
 // PostV2DpAudiencemetadataWithBodyWithResponse request with arbitrary body returning *PostV2DpAudiencemetadataResp
-func (c *ClientWithResponses) PostV2DpAudiencemetadataWithBodyWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostV2DpAudiencemetadataResp, error) {
-	rsp, err := c.PostV2DpAudiencemetadataWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PostV2DpAudiencemetadataWithBodyWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, contentType string, body io.Reader) (*PostV2DpAudiencemetadataResp, error) {
+	rsp, err := c.PostV2DpAudiencemetadataWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePostV2DpAudiencemetadataResp(rsp)
 }
 
-func (c *ClientWithResponses) PostV2DpAudiencemetadataWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV2DpAudiencemetadataResp, error) {
-	rsp, err := c.PostV2DpAudiencemetadata(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) PostV2DpAudiencemetadataWithResponse(ctx context.Context, params *PostV2DpAudiencemetadataParams, body PostV2DpAudiencemetadataJSONRequestBody) (*PostV2DpAudiencemetadataResp, error) {
+	rsp, err := c.PostV2DpAudiencemetadata(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1384,8 +1482,8 @@ func (c *ClientWithResponses) PostV2DpAudiencemetadataWithResponse(ctx context.C
 }
 
 // GetV2DpAudiencemetadataAudienceIdWithResponse request returning *GetV2DpAudiencemetadataAudienceIdResp
-func (c *ClientWithResponses) GetV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams, reqEditors ...RequestEditorFn) (*GetV2DpAudiencemetadataAudienceIdResp, error) {
-	rsp, err := c.GetV2DpAudiencemetadataAudienceId(ctx, audienceId, params, reqEditors...)
+func (c *ClientWithResponses) GetV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *GetV2DpAudiencemetadataAudienceIdParams) (*GetV2DpAudiencemetadataAudienceIdResp, error) {
+	rsp, err := c.GetV2DpAudiencemetadataAudienceId(ctx, audienceId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1393,16 +1491,16 @@ func (c *ClientWithResponses) GetV2DpAudiencemetadataAudienceIdWithResponse(ctx 
 }
 
 // PutV2DpAudiencemetadataAudienceIdWithBodyWithResponse request with arbitrary body returning *PutV2DpAudiencemetadataAudienceIdResp
-func (c *ClientWithResponses) PutV2DpAudiencemetadataAudienceIdWithBodyWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutV2DpAudiencemetadataAudienceIdResp, error) {
-	rsp, err := c.PutV2DpAudiencemetadataAudienceIdWithBody(ctx, audienceId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PutV2DpAudiencemetadataAudienceIdWithBodyWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, contentType string, body io.Reader) (*PutV2DpAudiencemetadataAudienceIdResp, error) {
+	rsp, err := c.PutV2DpAudiencemetadataAudienceIdWithBody(ctx, audienceId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePutV2DpAudiencemetadataAudienceIdResp(rsp)
 }
 
-func (c *ClientWithResponses) PutV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutV2DpAudiencemetadataAudienceIdResp, error) {
-	rsp, err := c.PutV2DpAudiencemetadataAudienceId(ctx, audienceId, params, body, reqEditors...)
+func (c *ClientWithResponses) PutV2DpAudiencemetadataAudienceIdWithResponse(ctx context.Context, audienceId AudienceId, params *PutV2DpAudiencemetadataAudienceIdParams, body PutV2DpAudiencemetadataAudienceIdJSONRequestBody) (*PutV2DpAudiencemetadataAudienceIdResp, error) {
+	rsp, err := c.PutV2DpAudiencemetadataAudienceId(ctx, audienceId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1410,16 +1508,16 @@ func (c *ClientWithResponses) PutV2DpAudiencemetadataAudienceIdWithResponse(ctx 
 }
 
 // PatchV2DpUsersWithBodyWithResponse request with arbitrary body returning *PatchV2DpUsersResp
-func (c *ClientWithResponses) PatchV2DpUsersWithBodyWithResponse(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PatchV2DpUsersResp, error) {
-	rsp, err := c.PatchV2DpUsersWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PatchV2DpUsersWithBodyWithResponse(ctx context.Context, params *PatchV2DpUsersParams, contentType string, body io.Reader) (*PatchV2DpUsersResp, error) {
+	rsp, err := c.PatchV2DpUsersWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePatchV2DpUsersResp(rsp)
 }
 
-func (c *ClientWithResponses) PatchV2DpUsersWithResponse(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody, reqEditors ...RequestEditorFn) (*PatchV2DpUsersResp, error) {
-	rsp, err := c.PatchV2DpUsers(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) PatchV2DpUsersWithResponse(ctx context.Context, params *PatchV2DpUsersParams, body PatchV2DpUsersJSONRequestBody) (*PatchV2DpUsersResp, error) {
+	rsp, err := c.PatchV2DpUsers(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

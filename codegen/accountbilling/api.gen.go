@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AdProgram.
@@ -783,8 +784,11 @@ type BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequ
 // BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody defines body for BulkGetBillingStatus for application/vnd.bulkgetbillingstatusrequestbody.v1+json ContentType.
 type BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody = BulkGetBillingStatusesRequestBody
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -808,6 +812,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -833,6 +844,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -854,95 +869,152 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// BulkGetBillingNotificationsWithBody request with any body
-	BulkGetBillingNotificationsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkGetBillingNotificationsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBody(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBody(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody) (*http.Response, error)
 
 	// BulkGetBillingStatusWithBody request with any body
-	BulkGetBillingStatusWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkGetBillingStatusWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error)
 
-	BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetAdvertiserInvoices request
-	GetAdvertiserInvoices(ctx context.Context, params *GetAdvertiserInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAdvertiserInvoices(ctx context.Context, params *GetAdvertiserInvoicesParams) (*http.Response, error)
 
 	// GetInvoice request
-	GetInvoice(ctx context.Context, invoiceId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetInvoice(ctx context.Context, invoiceId string) (*http.Response, error)
 }
 
-func (c *Client) BulkGetBillingNotificationsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) BulkGetBillingNotificationsWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewBulkGetBillingNotificationsRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBody(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBody(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewBulkGetBillingNotificationsRequestWithApplicationVndBillingnotificationsV1PlusJSONBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) BulkGetBillingStatusWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) BulkGetBillingStatusWithBody(ctx context.Context, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewBulkGetBillingStatusRequestWithBody(c.Server, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewBulkGetBillingStatusRequestWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetAdvertiserInvoices(ctx context.Context, params *GetAdvertiserInvoicesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAdvertiserInvoices(ctx context.Context, params *GetAdvertiserInvoicesParams) (*http.Response, error) {
 	req, err := NewGetAdvertiserInvoicesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetInvoice(ctx context.Context, invoiceId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetInvoice(ctx context.Context, invoiceId string) (*http.Response, error) {
 	req, err := NewGetInvoiceRequest(c.Server, invoiceId)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewBulkGetBillingNotificationsRequestWithApplicationVndBillingnotificationsV1PlusJSONBody calls the generic BulkGetBillingNotifications builder with application/vnd.billingnotifications.v1+json body
@@ -1055,9 +1127,11 @@ func NewGetAdvertiserInvoicesRequest(server string, params *GetAdvertiserInvoice
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -1071,9 +1145,11 @@ func NewGetAdvertiserInvoicesRequest(server string, params *GetAdvertiserInvoice
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -1087,9 +1163,11 @@ func NewGetAdvertiserInvoicesRequest(server string, params *GetAdvertiserInvoice
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -1140,13 +1218,8 @@ func NewGetInvoiceRequest(server string, invoiceId string) (*http.Request, error
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -1154,7 +1227,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -1184,20 +1264,20 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// BulkGetBillingNotificationsWithBodyWithResponse request with any body
-	BulkGetBillingNotificationsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkGetBillingNotificationsResp, error)
+	BulkGetBillingNotificationsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*BulkGetBillingNotificationsResp, error)
 
-	BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkGetBillingNotificationsResp, error)
+	BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody) (*BulkGetBillingNotificationsResp, error)
 
 	// BulkGetBillingStatusWithBodyWithResponse request with any body
-	BulkGetBillingStatusWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkGetBillingStatusResp, error)
+	BulkGetBillingStatusWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*BulkGetBillingStatusResp, error)
 
-	BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkGetBillingStatusResp, error)
+	BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody) (*BulkGetBillingStatusResp, error)
 
 	// GetAdvertiserInvoicesWithResponse request
-	GetAdvertiserInvoicesWithResponse(ctx context.Context, params *GetAdvertiserInvoicesParams, reqEditors ...RequestEditorFn) (*GetAdvertiserInvoicesResp, error)
+	GetAdvertiserInvoicesWithResponse(ctx context.Context, params *GetAdvertiserInvoicesParams) (*GetAdvertiserInvoicesResp, error)
 
 	// GetInvoiceWithResponse request
-	GetInvoiceWithResponse(ctx context.Context, invoiceId string, reqEditors ...RequestEditorFn) (*GetInvoiceResp, error)
+	GetInvoiceWithResponse(ctx context.Context, invoiceId string) (*GetInvoiceResp, error)
 }
 
 type BulkGetBillingNotificationsResp struct {
@@ -1309,16 +1389,16 @@ func (r GetInvoiceResp) StatusCode() int {
 }
 
 // BulkGetBillingNotificationsWithBodyWithResponse request with arbitrary body returning *BulkGetBillingNotificationsResp
-func (c *ClientWithResponses) BulkGetBillingNotificationsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkGetBillingNotificationsResp, error) {
-	rsp, err := c.BulkGetBillingNotificationsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) BulkGetBillingNotificationsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*BulkGetBillingNotificationsResp, error) {
+	rsp, err := c.BulkGetBillingNotificationsWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseBulkGetBillingNotificationsResp(rsp)
 }
 
-func (c *ClientWithResponses) BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkGetBillingNotificationsResp, error) {
-	rsp, err := c.BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBody(ctx, body, reqEditors...)
+func (c *ClientWithResponses) BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingNotificationsApplicationVndBillingnotificationsV1PlusJSONRequestBody) (*BulkGetBillingNotificationsResp, error) {
+	rsp, err := c.BulkGetBillingNotificationsWithApplicationVndBillingnotificationsV1PlusJSONBody(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1326,16 +1406,16 @@ func (c *ClientWithResponses) BulkGetBillingNotificationsWithApplicationVndBilli
 }
 
 // BulkGetBillingStatusWithBodyWithResponse request with arbitrary body returning *BulkGetBillingStatusResp
-func (c *ClientWithResponses) BulkGetBillingStatusWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*BulkGetBillingStatusResp, error) {
-	rsp, err := c.BulkGetBillingStatusWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) BulkGetBillingStatusWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader) (*BulkGetBillingStatusResp, error) {
+	rsp, err := c.BulkGetBillingStatusWithBody(ctx, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseBulkGetBillingStatusResp(rsp)
 }
 
-func (c *ClientWithResponses) BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*BulkGetBillingStatusResp, error) {
-	rsp, err := c.BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(ctx, body, reqEditors...)
+func (c *ClientWithResponses) BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBodyWithResponse(ctx context.Context, body BulkGetBillingStatusApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONRequestBody) (*BulkGetBillingStatusResp, error) {
+	rsp, err := c.BulkGetBillingStatusWithApplicationVndBulkgetbillingstatusrequestbodyV1PlusJSONBody(ctx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1343,8 +1423,8 @@ func (c *ClientWithResponses) BulkGetBillingStatusWithApplicationVndBulkgetbilli
 }
 
 // GetAdvertiserInvoicesWithResponse request returning *GetAdvertiserInvoicesResp
-func (c *ClientWithResponses) GetAdvertiserInvoicesWithResponse(ctx context.Context, params *GetAdvertiserInvoicesParams, reqEditors ...RequestEditorFn) (*GetAdvertiserInvoicesResp, error) {
-	rsp, err := c.GetAdvertiserInvoices(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetAdvertiserInvoicesWithResponse(ctx context.Context, params *GetAdvertiserInvoicesParams) (*GetAdvertiserInvoicesResp, error) {
+	rsp, err := c.GetAdvertiserInvoices(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1352,8 +1432,8 @@ func (c *ClientWithResponses) GetAdvertiserInvoicesWithResponse(ctx context.Cont
 }
 
 // GetInvoiceWithResponse request returning *GetInvoiceResp
-func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, invoiceId string, reqEditors ...RequestEditorFn) (*GetInvoiceResp, error) {
-	rsp, err := c.GetInvoice(ctx, invoiceId, reqEditors...)
+func (c *ClientWithResponses) GetInvoiceWithResponse(ctx context.Context, invoiceId string) (*GetInvoiceResp, error) {
+	rsp, err := c.GetInvoice(ctx, invoiceId)
 	if err != nil {
 		return nil, err
 	}

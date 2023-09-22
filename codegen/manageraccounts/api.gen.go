@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AccountRelationshipRole.
@@ -194,8 +195,11 @@ type LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadverti
 // UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody defines body for UnlinkAdvertisingAccountsToManagerAccountPublicAPI for application/vnd.updateadvertisingaccountsinmanageraccountrequest.v1+json ContentType.
 type UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody = UpdateAdvertisingAccountsInManagerAccountRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -219,6 +223,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -244,6 +255,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -265,109 +280,174 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GetManagerAccountsForUser request
-	GetManagerAccountsForUser(ctx context.Context, params *GetManagerAccountsForUserParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetManagerAccountsForUser(ctx context.Context, params *GetManagerAccountsForUserParams) (*http.Response, error)
 
 	// CreateManagerAccountWithBody request with any body
-	CreateManagerAccountWithBody(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateManagerAccountWithBody(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody) (*http.Response, error)
 
 	// LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody request with any body
-	LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*http.Response, error)
 
-	LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*http.Response, error)
 
 	// UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody request with any body
-	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) GetManagerAccountsForUser(ctx context.Context, params *GetManagerAccountsForUserParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetManagerAccountsForUser(ctx context.Context, params *GetManagerAccountsForUserParams) (*http.Response, error) {
 	req, err := NewGetManagerAccountsForUserRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateManagerAccountWithBody(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateManagerAccountWithBody(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateManagerAccountRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateManagerAccountRequestWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewLinkAdvertisingAccountsToManagerAccountPublicAPIRequestWithBody(c.Server, managerAccountId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewLinkAdvertisingAccountsToManagerAccountPublicAPIRequestWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(c.Server, managerAccountId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUnlinkAdvertisingAccountsToManagerAccountPublicAPIRequestWithBody(c.Server, managerAccountId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUnlinkAdvertisingAccountsToManagerAccountPublicAPIRequestWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(c.Server, managerAccountId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGetManagerAccountsForUserRequest generates requests for GetManagerAccountsForUser
@@ -583,13 +663,8 @@ func NewUnlinkAdvertisingAccountsToManagerAccountPublicAPIRequestWithBody(server
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -597,7 +672,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -627,22 +709,22 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GetManagerAccountsForUserWithResponse request
-	GetManagerAccountsForUserWithResponse(ctx context.Context, params *GetManagerAccountsForUserParams, reqEditors ...RequestEditorFn) (*GetManagerAccountsForUserResp, error)
+	GetManagerAccountsForUserWithResponse(ctx context.Context, params *GetManagerAccountsForUserParams) (*GetManagerAccountsForUserResp, error)
 
 	// CreateManagerAccountWithBodyWithResponse request with any body
-	CreateManagerAccountWithBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateManagerAccountResp, error)
+	CreateManagerAccountWithBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader) (*CreateManagerAccountResp, error)
 
-	CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateManagerAccountResp, error)
+	CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody) (*CreateManagerAccountResp, error)
 
 	// LinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse request with any body
-	LinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
+	LinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
 
-	LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
+	LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
 
 	// UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse request with any body
-	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
+	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
 
-	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
+	UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error)
 }
 
 type GetManagerAccountsForUserResp struct {
@@ -748,8 +830,8 @@ func (r UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp) StatusCode() int
 }
 
 // GetManagerAccountsForUserWithResponse request returning *GetManagerAccountsForUserResp
-func (c *ClientWithResponses) GetManagerAccountsForUserWithResponse(ctx context.Context, params *GetManagerAccountsForUserParams, reqEditors ...RequestEditorFn) (*GetManagerAccountsForUserResp, error) {
-	rsp, err := c.GetManagerAccountsForUser(ctx, params, reqEditors...)
+func (c *ClientWithResponses) GetManagerAccountsForUserWithResponse(ctx context.Context, params *GetManagerAccountsForUserParams) (*GetManagerAccountsForUserResp, error) {
+	rsp, err := c.GetManagerAccountsForUser(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -757,16 +839,16 @@ func (c *ClientWithResponses) GetManagerAccountsForUserWithResponse(ctx context.
 }
 
 // CreateManagerAccountWithBodyWithResponse request with arbitrary body returning *CreateManagerAccountResp
-func (c *ClientWithResponses) CreateManagerAccountWithBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateManagerAccountResp, error) {
-	rsp, err := c.CreateManagerAccountWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateManagerAccountWithBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, contentType string, body io.Reader) (*CreateManagerAccountResp, error) {
+	rsp, err := c.CreateManagerAccountWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateManagerAccountResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateManagerAccountResp, error) {
-	rsp, err := c.CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, params *CreateManagerAccountParams, body CreateManagerAccountApplicationVndCreatemanageraccountrequestV1PlusJSONRequestBody) (*CreateManagerAccountResp, error) {
+	rsp, err := c.CreateManagerAccountWithApplicationVndCreatemanageraccountrequestV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -774,16 +856,16 @@ func (c *ClientWithResponses) CreateManagerAccountWithApplicationVndCreatemanage
 }
 
 // LinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse request with arbitrary body returning *LinkAdvertisingAccountsToManagerAccountPublicAPIResp
-func (c *ClientWithResponses) LinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
-	rsp, err := c.LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx, managerAccountId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) LinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
+	rsp, err := c.LinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx, managerAccountId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseLinkAdvertisingAccountsToManagerAccountPublicAPIResp(rsp)
 }
 
-func (c *ClientWithResponses) LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
-	rsp, err := c.LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx, managerAccountId, params, body, reqEditors...)
+func (c *ClientWithResponses) LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *LinkAdvertisingAccountsToManagerAccountPublicAPIParams, body LinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*LinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
+	rsp, err := c.LinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx, managerAccountId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -791,16 +873,16 @@ func (c *ClientWithResponses) LinkAdvertisingAccountsToManagerAccountPublicAPIWi
 }
 
 // UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse request with arbitrary body returning *UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp
-func (c *ClientWithResponses) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
-	rsp, err := c.UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx, managerAccountId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, contentType string, body io.Reader) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
+	rsp, err := c.UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithBody(ctx, managerAccountId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUnlinkAdvertisingAccountsToManagerAccountPublicAPIResp(rsp)
 }
 
-func (c *ClientWithResponses) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
-	rsp, err := c.UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx, managerAccountId, params, body, reqEditors...)
+func (c *ClientWithResponses) UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBodyWithResponse(ctx context.Context, managerAccountId string, params *UnlinkAdvertisingAccountsToManagerAccountPublicAPIParams, body UnlinkAdvertisingAccountsToManagerAccountPublicAPIApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONRequestBody) (*UnlinkAdvertisingAccountsToManagerAccountPublicAPIResp, error) {
+	rsp, err := c.UnlinkAdvertisingAccountsToManagerAccountPublicAPIWithApplicationVndUpdateadvertisingaccountsinmanageraccountrequestV1PlusJSONBody(ctx, managerAccountId, params, body)
 	if err != nil {
 		return nil, err
 	}

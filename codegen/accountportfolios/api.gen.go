@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 const (
@@ -421,8 +422,11 @@ type CreatePortfoliosJSONRequestBody = CreatePortfoliosJSONBody
 // UpdatePortfoliosJSONRequestBody defines body for UpdatePortfolios for application/json ContentType.
 type UpdatePortfoliosJSONRequestBody = UpdatePortfoliosJSONBody
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -446,6 +450,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -471,6 +482,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -492,125 +507,198 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ListPortfolios request
-	ListPortfolios(ctx context.Context, params *ListPortfoliosParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPortfolios(ctx context.Context, params *ListPortfoliosParams) (*http.Response, error)
 
 	// CreatePortfoliosWithBody request with any body
-	CreatePortfoliosWithBody(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePortfoliosWithBody(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreatePortfolios(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreatePortfolios(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody) (*http.Response, error)
 
 	// UpdatePortfoliosWithBody request with any body
-	UpdatePortfoliosWithBody(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdatePortfoliosWithBody(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdatePortfolios(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdatePortfolios(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody) (*http.Response, error)
 
 	// ListPortfoliosEx request
-	ListPortfoliosEx(ctx context.Context, params *ListPortfoliosExParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPortfoliosEx(ctx context.Context, params *ListPortfoliosExParams) (*http.Response, error)
 
 	// ListPortfolioEx request
-	ListPortfolioEx(ctx context.Context, portfolioId float32, params *ListPortfolioExParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPortfolioEx(ctx context.Context, portfolioId float32, params *ListPortfolioExParams) (*http.Response, error)
 
 	// ListPortfolio request
-	ListPortfolio(ctx context.Context, portfolioId float32, params *ListPortfolioParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListPortfolio(ctx context.Context, portfolioId float32, params *ListPortfolioParams) (*http.Response, error)
 }
 
-func (c *Client) ListPortfolios(ctx context.Context, params *ListPortfoliosParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListPortfolios(ctx context.Context, params *ListPortfoliosParams) (*http.Response, error) {
 	req, err := NewListPortfoliosRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreatePortfoliosWithBody(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreatePortfoliosWithBody(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreatePortfoliosRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreatePortfolios(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreatePortfolios(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreatePortfoliosRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdatePortfoliosWithBody(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdatePortfoliosWithBody(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdatePortfoliosRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdatePortfolios(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdatePortfolios(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdatePortfoliosRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListPortfoliosEx(ctx context.Context, params *ListPortfoliosExParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListPortfoliosEx(ctx context.Context, params *ListPortfoliosExParams) (*http.Response, error) {
 	req, err := NewListPortfoliosExRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListPortfolioEx(ctx context.Context, portfolioId float32, params *ListPortfolioExParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListPortfolioEx(ctx context.Context, portfolioId float32, params *ListPortfolioExParams) (*http.Response, error) {
 	req, err := NewListPortfolioExRequest(c.Server, portfolioId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListPortfolio(ctx context.Context, portfolioId float32, params *ListPortfolioParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListPortfolio(ctx context.Context, portfolioId float32, params *ListPortfolioParams) (*http.Response, error) {
 	req, err := NewListPortfolioRequest(c.Server, portfolioId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewListPortfoliosRequest generates requests for ListPortfolios
@@ -643,9 +731,11 @@ func NewListPortfoliosRequest(server string, params *ListPortfoliosParams) (*htt
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -659,9 +749,11 @@ func NewListPortfoliosRequest(server string, params *ListPortfoliosParams) (*htt
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -675,9 +767,11 @@ func NewListPortfoliosRequest(server string, params *ListPortfoliosParams) (*htt
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -870,9 +964,11 @@ func NewListPortfoliosExRequest(server string, params *ListPortfoliosExParams) (
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -886,9 +982,11 @@ func NewListPortfoliosExRequest(server string, params *ListPortfoliosExParams) (
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -902,9 +1000,11 @@ func NewListPortfoliosExRequest(server string, params *ListPortfoliosExParams) (
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -1055,13 +1155,8 @@ func NewListPortfolioRequest(server string, portfolioId float32, params *ListPor
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -1069,7 +1164,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -1099,26 +1201,26 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ListPortfoliosWithResponse request
-	ListPortfoliosWithResponse(ctx context.Context, params *ListPortfoliosParams, reqEditors ...RequestEditorFn) (*ListPortfoliosResp, error)
+	ListPortfoliosWithResponse(ctx context.Context, params *ListPortfoliosParams) (*ListPortfoliosResp, error)
 
 	// CreatePortfoliosWithBodyWithResponse request with any body
-	CreatePortfoliosWithBodyWithResponse(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortfoliosResp, error)
+	CreatePortfoliosWithBodyWithResponse(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader) (*CreatePortfoliosResp, error)
 
-	CreatePortfoliosWithResponse(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortfoliosResp, error)
+	CreatePortfoliosWithResponse(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody) (*CreatePortfoliosResp, error)
 
 	// UpdatePortfoliosWithBodyWithResponse request with any body
-	UpdatePortfoliosWithBodyWithResponse(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePortfoliosResp, error)
+	UpdatePortfoliosWithBodyWithResponse(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader) (*UpdatePortfoliosResp, error)
 
-	UpdatePortfoliosWithResponse(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePortfoliosResp, error)
+	UpdatePortfoliosWithResponse(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody) (*UpdatePortfoliosResp, error)
 
 	// ListPortfoliosExWithResponse request
-	ListPortfoliosExWithResponse(ctx context.Context, params *ListPortfoliosExParams, reqEditors ...RequestEditorFn) (*ListPortfoliosExResp, error)
+	ListPortfoliosExWithResponse(ctx context.Context, params *ListPortfoliosExParams) (*ListPortfoliosExResp, error)
 
 	// ListPortfolioExWithResponse request
-	ListPortfolioExWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioExParams, reqEditors ...RequestEditorFn) (*ListPortfolioExResp, error)
+	ListPortfolioExWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioExParams) (*ListPortfolioExResp, error)
 
 	// ListPortfolioWithResponse request
-	ListPortfolioWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioParams, reqEditors ...RequestEditorFn) (*ListPortfolioResp, error)
+	ListPortfolioWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioParams) (*ListPortfolioResp, error)
 }
 
 type ListPortfoliosResp struct {
@@ -1278,8 +1380,8 @@ func (r ListPortfolioResp) StatusCode() int {
 }
 
 // ListPortfoliosWithResponse request returning *ListPortfoliosResp
-func (c *ClientWithResponses) ListPortfoliosWithResponse(ctx context.Context, params *ListPortfoliosParams, reqEditors ...RequestEditorFn) (*ListPortfoliosResp, error) {
-	rsp, err := c.ListPortfolios(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListPortfoliosWithResponse(ctx context.Context, params *ListPortfoliosParams) (*ListPortfoliosResp, error) {
+	rsp, err := c.ListPortfolios(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1287,16 +1389,16 @@ func (c *ClientWithResponses) ListPortfoliosWithResponse(ctx context.Context, pa
 }
 
 // CreatePortfoliosWithBodyWithResponse request with arbitrary body returning *CreatePortfoliosResp
-func (c *ClientWithResponses) CreatePortfoliosWithBodyWithResponse(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreatePortfoliosResp, error) {
-	rsp, err := c.CreatePortfoliosWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreatePortfoliosWithBodyWithResponse(ctx context.Context, params *CreatePortfoliosParams, contentType string, body io.Reader) (*CreatePortfoliosResp, error) {
+	rsp, err := c.CreatePortfoliosWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreatePortfoliosResp(rsp)
 }
 
-func (c *ClientWithResponses) CreatePortfoliosWithResponse(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*CreatePortfoliosResp, error) {
-	rsp, err := c.CreatePortfolios(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreatePortfoliosWithResponse(ctx context.Context, params *CreatePortfoliosParams, body CreatePortfoliosJSONRequestBody) (*CreatePortfoliosResp, error) {
+	rsp, err := c.CreatePortfolios(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1304,16 +1406,16 @@ func (c *ClientWithResponses) CreatePortfoliosWithResponse(ctx context.Context, 
 }
 
 // UpdatePortfoliosWithBodyWithResponse request with arbitrary body returning *UpdatePortfoliosResp
-func (c *ClientWithResponses) UpdatePortfoliosWithBodyWithResponse(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdatePortfoliosResp, error) {
-	rsp, err := c.UpdatePortfoliosWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdatePortfoliosWithBodyWithResponse(ctx context.Context, params *UpdatePortfoliosParams, contentType string, body io.Reader) (*UpdatePortfoliosResp, error) {
+	rsp, err := c.UpdatePortfoliosWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdatePortfoliosResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdatePortfoliosWithResponse(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdatePortfoliosResp, error) {
-	rsp, err := c.UpdatePortfolios(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdatePortfoliosWithResponse(ctx context.Context, params *UpdatePortfoliosParams, body UpdatePortfoliosJSONRequestBody) (*UpdatePortfoliosResp, error) {
+	rsp, err := c.UpdatePortfolios(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1321,8 +1423,8 @@ func (c *ClientWithResponses) UpdatePortfoliosWithResponse(ctx context.Context, 
 }
 
 // ListPortfoliosExWithResponse request returning *ListPortfoliosExResp
-func (c *ClientWithResponses) ListPortfoliosExWithResponse(ctx context.Context, params *ListPortfoliosExParams, reqEditors ...RequestEditorFn) (*ListPortfoliosExResp, error) {
-	rsp, err := c.ListPortfoliosEx(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListPortfoliosExWithResponse(ctx context.Context, params *ListPortfoliosExParams) (*ListPortfoliosExResp, error) {
+	rsp, err := c.ListPortfoliosEx(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1330,8 +1432,8 @@ func (c *ClientWithResponses) ListPortfoliosExWithResponse(ctx context.Context, 
 }
 
 // ListPortfolioExWithResponse request returning *ListPortfolioExResp
-func (c *ClientWithResponses) ListPortfolioExWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioExParams, reqEditors ...RequestEditorFn) (*ListPortfolioExResp, error) {
-	rsp, err := c.ListPortfolioEx(ctx, portfolioId, params, reqEditors...)
+func (c *ClientWithResponses) ListPortfolioExWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioExParams) (*ListPortfolioExResp, error) {
+	rsp, err := c.ListPortfolioEx(ctx, portfolioId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1339,8 +1441,8 @@ func (c *ClientWithResponses) ListPortfolioExWithResponse(ctx context.Context, p
 }
 
 // ListPortfolioWithResponse request returning *ListPortfolioResp
-func (c *ClientWithResponses) ListPortfolioWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioParams, reqEditors ...RequestEditorFn) (*ListPortfolioResp, error) {
-	rsp, err := c.ListPortfolio(ctx, portfolioId, params, reqEditors...)
+func (c *ClientWithResponses) ListPortfolioWithResponse(ctx context.Context, portfolioId float32, params *ListPortfolioParams) (*ListPortfolioResp, error) {
+	rsp, err := c.ListPortfolio(ctx, portfolioId, params)
 	if err != nil {
 		return nil, err
 	}

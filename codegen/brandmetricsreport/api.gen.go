@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 // Defines values for BrandMetricsGenerateReportRequestFormat.
@@ -182,8 +183,11 @@ type GetBrandMetricsReportParams struct {
 // GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody defines body for GenerateBrandMetricsReport for application/vnd.insightsBrandMetrics.v1+json ContentType.
 type GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody = BrandMetricsGenerateReportRequest
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -207,6 +211,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -232,6 +243,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -253,51 +268,84 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// GenerateBrandMetricsReportWithBody request with any body
-	GenerateBrandMetricsReportWithBody(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GenerateBrandMetricsReportWithBody(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader) (*http.Response, error)
 
-	GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody) (*http.Response, error)
 
 	// GetBrandMetricsReport request
-	GetBrandMetricsReport(ctx context.Context, reportId string, params *GetBrandMetricsReportParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBrandMetricsReport(ctx context.Context, reportId string, params *GetBrandMetricsReportParams) (*http.Response, error)
 }
 
-func (c *Client) GenerateBrandMetricsReportWithBody(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GenerateBrandMetricsReportWithBody(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewGenerateBrandMetricsReportRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewGenerateBrandMetricsReportRequestWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetBrandMetricsReport(ctx context.Context, reportId string, params *GetBrandMetricsReportParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBrandMetricsReport(ctx context.Context, reportId string, params *GetBrandMetricsReportParams) (*http.Response, error) {
 	req, err := NewGetBrandMetricsReportRequest(c.Server, reportId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewGenerateBrandMetricsReportRequestWithApplicationVndInsightsBrandMetricsV1PlusJSONBody calls the generic GenerateBrandMetricsReport builder with application/vnd.insightsBrandMetrics.v1+json body
@@ -418,13 +466,8 @@ func NewGetBrandMetricsReportRequest(server string, reportId string, params *Get
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -432,7 +475,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -462,12 +512,12 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// GenerateBrandMetricsReportWithBodyWithResponse request with any body
-	GenerateBrandMetricsReportWithBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateBrandMetricsReportResp, error)
+	GenerateBrandMetricsReportWithBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader) (*GenerateBrandMetricsReportResp, error)
 
-	GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateBrandMetricsReportResp, error)
+	GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody) (*GenerateBrandMetricsReportResp, error)
 
 	// GetBrandMetricsReportWithResponse request
-	GetBrandMetricsReportWithResponse(ctx context.Context, reportId string, params *GetBrandMetricsReportParams, reqEditors ...RequestEditorFn) (*GetBrandMetricsReportResp, error)
+	GetBrandMetricsReportWithResponse(ctx context.Context, reportId string, params *GetBrandMetricsReportParams) (*GetBrandMetricsReportResp, error)
 }
 
 type GenerateBrandMetricsReportResp struct {
@@ -529,16 +579,16 @@ func (r GetBrandMetricsReportResp) StatusCode() int {
 }
 
 // GenerateBrandMetricsReportWithBodyWithResponse request with arbitrary body returning *GenerateBrandMetricsReportResp
-func (c *ClientWithResponses) GenerateBrandMetricsReportWithBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*GenerateBrandMetricsReportResp, error) {
-	rsp, err := c.GenerateBrandMetricsReportWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) GenerateBrandMetricsReportWithBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, contentType string, body io.Reader) (*GenerateBrandMetricsReportResp, error) {
+	rsp, err := c.GenerateBrandMetricsReportWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseGenerateBrandMetricsReportResp(rsp)
 }
 
-func (c *ClientWithResponses) GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*GenerateBrandMetricsReportResp, error) {
-	rsp, err := c.GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBodyWithResponse(ctx context.Context, params *GenerateBrandMetricsReportParams, body GenerateBrandMetricsReportApplicationVndInsightsBrandMetricsV1PlusJSONRequestBody) (*GenerateBrandMetricsReportResp, error) {
+	rsp, err := c.GenerateBrandMetricsReportWithApplicationVndInsightsBrandMetricsV1PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -546,8 +596,8 @@ func (c *ClientWithResponses) GenerateBrandMetricsReportWithApplicationVndInsigh
 }
 
 // GetBrandMetricsReportWithResponse request returning *GetBrandMetricsReportResp
-func (c *ClientWithResponses) GetBrandMetricsReportWithResponse(ctx context.Context, reportId string, params *GetBrandMetricsReportParams, reqEditors ...RequestEditorFn) (*GetBrandMetricsReportResp, error) {
-	rsp, err := c.GetBrandMetricsReport(ctx, reportId, params, reqEditors...)
+func (c *ClientWithResponses) GetBrandMetricsReportWithResponse(ctx context.Context, reportId string, params *GetBrandMetricsReportParams) (*GetBrandMetricsReportResp, error) {
+	rsp, err := c.GetBrandMetricsReport(ctx, reportId, params)
 	if err != nil {
 		return nil, err
 	}

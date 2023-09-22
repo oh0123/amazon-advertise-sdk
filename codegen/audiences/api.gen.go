@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for AudienceCommonFieldsV1Status.
@@ -217,8 +218,11 @@ type ListAudiencesJSONRequestBody = ListAudiencesRequestBodyV1
 // FetchTaxonomyJSONRequestBody defines body for FetchTaxonomy for application/json ContentType.
 type FetchTaxonomyJSONRequestBody = FetchTaxonomyRequestBodyV1
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -242,6 +246,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -267,6 +278,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -288,65 +303,106 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ListAudiencesWithBody request with any body
-	ListAudiencesWithBody(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAudiencesWithBody(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	ListAudiences(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListAudiences(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody) (*http.Response, error)
 
 	// FetchTaxonomyWithBody request with any body
-	FetchTaxonomyWithBody(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	FetchTaxonomyWithBody(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader) (*http.Response, error)
 
-	FetchTaxonomy(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	FetchTaxonomy(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) ListAudiencesWithBody(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAudiencesWithBody(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewListAudiencesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListAudiences(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListAudiences(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody) (*http.Response, error) {
 	req, err := NewListAudiencesRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) FetchTaxonomyWithBody(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) FetchTaxonomyWithBody(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewFetchTaxonomyRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) FetchTaxonomy(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) FetchTaxonomy(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody) (*http.Response, error) {
 	req, err := NewFetchTaxonomyRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewListAudiencesRequest calls the generic ListAudiences builder with application/json body
@@ -390,9 +446,11 @@ func NewListAudiencesRequestWithBody(server string, params *ListAudiencesParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -406,9 +464,11 @@ func NewListAudiencesRequestWithBody(server string, params *ListAudiencesParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -422,9 +482,11 @@ func NewListAudiencesRequestWithBody(server string, params *ListAudiencesParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -438,9 +500,11 @@ func NewListAudiencesRequestWithBody(server string, params *ListAudiencesParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -522,9 +586,11 @@ func NewFetchTaxonomyRequestWithBody(server string, params *FetchTaxonomyParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -538,9 +604,11 @@ func NewFetchTaxonomyRequestWithBody(server string, params *FetchTaxonomyParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -554,9 +622,11 @@ func NewFetchTaxonomyRequestWithBody(server string, params *FetchTaxonomyParams,
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -597,13 +667,8 @@ func NewFetchTaxonomyRequestWithBody(server string, params *FetchTaxonomyParams,
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -611,7 +676,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -641,14 +713,14 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ListAudiencesWithBodyWithResponse request with any body
-	ListAudiencesWithBodyWithResponse(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListAudiencesResp, error)
+	ListAudiencesWithBodyWithResponse(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader) (*ListAudiencesResp, error)
 
-	ListAudiencesWithResponse(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ListAudiencesResp, error)
+	ListAudiencesWithResponse(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody) (*ListAudiencesResp, error)
 
 	// FetchTaxonomyWithBodyWithResponse request with any body
-	FetchTaxonomyWithBodyWithResponse(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FetchTaxonomyResp, error)
+	FetchTaxonomyWithBodyWithResponse(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader) (*FetchTaxonomyResp, error)
 
-	FetchTaxonomyWithResponse(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody, reqEditors ...RequestEditorFn) (*FetchTaxonomyResp, error)
+	FetchTaxonomyWithResponse(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody) (*FetchTaxonomyResp, error)
 }
 
 type ListAudiencesResp struct {
@@ -704,16 +776,16 @@ func (r FetchTaxonomyResp) StatusCode() int {
 }
 
 // ListAudiencesWithBodyWithResponse request with arbitrary body returning *ListAudiencesResp
-func (c *ClientWithResponses) ListAudiencesWithBodyWithResponse(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ListAudiencesResp, error) {
-	rsp, err := c.ListAudiencesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) ListAudiencesWithBodyWithResponse(ctx context.Context, params *ListAudiencesParams, contentType string, body io.Reader) (*ListAudiencesResp, error) {
+	rsp, err := c.ListAudiencesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseListAudiencesResp(rsp)
 }
 
-func (c *ClientWithResponses) ListAudiencesWithResponse(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody, reqEditors ...RequestEditorFn) (*ListAudiencesResp, error) {
-	rsp, err := c.ListAudiences(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) ListAudiencesWithResponse(ctx context.Context, params *ListAudiencesParams, body ListAudiencesJSONRequestBody) (*ListAudiencesResp, error) {
+	rsp, err := c.ListAudiences(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -721,16 +793,16 @@ func (c *ClientWithResponses) ListAudiencesWithResponse(ctx context.Context, par
 }
 
 // FetchTaxonomyWithBodyWithResponse request with arbitrary body returning *FetchTaxonomyResp
-func (c *ClientWithResponses) FetchTaxonomyWithBodyWithResponse(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*FetchTaxonomyResp, error) {
-	rsp, err := c.FetchTaxonomyWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) FetchTaxonomyWithBodyWithResponse(ctx context.Context, params *FetchTaxonomyParams, contentType string, body io.Reader) (*FetchTaxonomyResp, error) {
+	rsp, err := c.FetchTaxonomyWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseFetchTaxonomyResp(rsp)
 }
 
-func (c *ClientWithResponses) FetchTaxonomyWithResponse(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody, reqEditors ...RequestEditorFn) (*FetchTaxonomyResp, error) {
-	rsp, err := c.FetchTaxonomy(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) FetchTaxonomyWithResponse(ctx context.Context, params *FetchTaxonomyParams, body FetchTaxonomyJSONRequestBody) (*FetchTaxonomyResp, error) {
+	rsp, err := c.FetchTaxonomy(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}

@@ -11,9 +11,10 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 const (
@@ -375,8 +376,11 @@ type GetProfileByIdParams struct {
 // UpdateProfilesJSONRequestBody defines body for UpdateProfiles for application/json ContentType.
 type UpdateProfilesJSONRequestBody = UpdateProfilesJSONBody
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -400,6 +404,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -425,6 +436,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -446,66 +461,107 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ListProfiles request
-	ListProfiles(ctx context.Context, params *ListProfilesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListProfiles(ctx context.Context, params *ListProfilesParams) (*http.Response, error)
 
 	// UpdateProfilesWithBody request with any body
-	UpdateProfilesWithBody(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateProfilesWithBody(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateProfiles(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateProfiles(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody) (*http.Response, error)
 
 	// GetProfileById request
-	GetProfileById(ctx context.Context, profileId int64, params *GetProfileByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetProfileById(ctx context.Context, profileId int64, params *GetProfileByIdParams) (*http.Response, error)
 }
 
-func (c *Client) ListProfiles(ctx context.Context, params *ListProfilesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListProfiles(ctx context.Context, params *ListProfilesParams) (*http.Response, error) {
 	req, err := NewListProfilesRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateProfilesWithBody(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateProfilesWithBody(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateProfilesRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateProfiles(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateProfiles(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateProfilesRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetProfileById(ctx context.Context, profileId int64, params *GetProfileByIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetProfileById(ctx context.Context, profileId int64, params *GetProfileByIdParams) (*http.Response, error) {
 	req, err := NewGetProfileByIdRequest(c.Server, profileId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewListProfilesRequest generates requests for ListProfiles
@@ -538,9 +594,11 @@ func NewListProfilesRequest(server string, params *ListProfilesParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -554,9 +612,11 @@ func NewListProfilesRequest(server string, params *ListProfilesParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -570,9 +630,11 @@ func NewListProfilesRequest(server string, params *ListProfilesParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -586,9 +648,11 @@ func NewListProfilesRequest(server string, params *ListProfilesParams) (*http.Re
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -718,13 +782,8 @@ func NewGetProfileByIdRequest(server string, profileId int64, params *GetProfile
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -732,7 +791,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -762,15 +828,15 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ListProfilesWithResponse request
-	ListProfilesWithResponse(ctx context.Context, params *ListProfilesParams, reqEditors ...RequestEditorFn) (*ListProfilesResp, error)
+	ListProfilesWithResponse(ctx context.Context, params *ListProfilesParams) (*ListProfilesResp, error)
 
 	// UpdateProfilesWithBodyWithResponse request with any body
-	UpdateProfilesWithBodyWithResponse(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProfilesResp, error)
+	UpdateProfilesWithBodyWithResponse(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader) (*UpdateProfilesResp, error)
 
-	UpdateProfilesWithResponse(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProfilesResp, error)
+	UpdateProfilesWithResponse(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody) (*UpdateProfilesResp, error)
 
 	// GetProfileByIdWithResponse request
-	GetProfileByIdWithResponse(ctx context.Context, profileId int64, params *GetProfileByIdParams, reqEditors ...RequestEditorFn) (*GetProfileByIdResp, error)
+	GetProfileByIdWithResponse(ctx context.Context, profileId int64, params *GetProfileByIdParams) (*GetProfileByIdResp, error)
 }
 
 type ListProfilesResp struct {
@@ -840,8 +906,8 @@ func (r GetProfileByIdResp) StatusCode() int {
 }
 
 // ListProfilesWithResponse request returning *ListProfilesResp
-func (c *ClientWithResponses) ListProfilesWithResponse(ctx context.Context, params *ListProfilesParams, reqEditors ...RequestEditorFn) (*ListProfilesResp, error) {
-	rsp, err := c.ListProfiles(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListProfilesWithResponse(ctx context.Context, params *ListProfilesParams) (*ListProfilesResp, error) {
+	rsp, err := c.ListProfiles(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -849,16 +915,16 @@ func (c *ClientWithResponses) ListProfilesWithResponse(ctx context.Context, para
 }
 
 // UpdateProfilesWithBodyWithResponse request with arbitrary body returning *UpdateProfilesResp
-func (c *ClientWithResponses) UpdateProfilesWithBodyWithResponse(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateProfilesResp, error) {
-	rsp, err := c.UpdateProfilesWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateProfilesWithBodyWithResponse(ctx context.Context, params *UpdateProfilesParams, contentType string, body io.Reader) (*UpdateProfilesResp, error) {
+	rsp, err := c.UpdateProfilesWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateProfilesResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateProfilesWithResponse(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateProfilesResp, error) {
-	rsp, err := c.UpdateProfiles(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateProfilesWithResponse(ctx context.Context, params *UpdateProfilesParams, body UpdateProfilesJSONRequestBody) (*UpdateProfilesResp, error) {
+	rsp, err := c.UpdateProfiles(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -866,8 +932,8 @@ func (c *ClientWithResponses) UpdateProfilesWithResponse(ctx context.Context, pa
 }
 
 // GetProfileByIdWithResponse request returning *GetProfileByIdResp
-func (c *ClientWithResponses) GetProfileByIdWithResponse(ctx context.Context, profileId int64, params *GetProfileByIdParams, reqEditors ...RequestEditorFn) (*GetProfileByIdResp, error) {
-	rsp, err := c.GetProfileById(ctx, profileId, params, reqEditors...)
+func (c *ClientWithResponses) GetProfileByIdWithResponse(ctx context.Context, profileId int64, params *GetProfileByIdParams) (*GetProfileByIdResp, error) {
+	rsp, err := c.GetProfileById(ctx, profileId, params)
 	if err != nil {
 		return nil, err
 	}

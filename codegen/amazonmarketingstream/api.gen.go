@@ -11,10 +11,11 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
 )
 
 // Defines values for SubscriptionEntityStatus.
@@ -300,8 +301,11 @@ type CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSub
 // UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody defines body for UpdateStreamSubscription for application/vnd.MarketingStreamSubscriptions.StreamSubscriptionResource.v1.0+json ContentType.
 type UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody = UpdateStreamSubscriptionRequestContent
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -325,6 +329,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -350,6 +361,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -371,183 +386,288 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// ListDspStreamSubscriptions request
-	ListDspStreamSubscriptions(ctx context.Context, params *ListDspStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListDspStreamSubscriptions(ctx context.Context, params *ListDspStreamSubscriptionsParams) (*http.Response, error)
 
 	// CreateDspStreamSubscriptionWithBody request with any body
-	CreateDspStreamSubscriptionWithBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDspStreamSubscriptionWithBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error)
 
 	// GetDspStreamSubscription request
-	GetDspStreamSubscription(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetDspStreamSubscription(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams) (*http.Response, error)
 
 	// UpdateDspStreamSubscriptionWithBody request with any body
-	UpdateDspStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDspStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error)
 
 	// ListStreamSubscriptions request
-	ListStreamSubscriptions(ctx context.Context, params *ListStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	ListStreamSubscriptions(ctx context.Context, params *ListStreamSubscriptionsParams) (*http.Response, error)
 
 	// CreateStreamSubscriptionWithBody request with any body
-	CreateStreamSubscriptionWithBody(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateStreamSubscriptionWithBody(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error)
 
 	// GetStreamSubscription request
-	GetStreamSubscription(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetStreamSubscription(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams) (*http.Response, error)
 
 	// UpdateStreamSubscriptionWithBody request with any body
-	UpdateStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error)
 
-	UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error)
 }
 
-func (c *Client) ListDspStreamSubscriptions(ctx context.Context, params *ListDspStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListDspStreamSubscriptions(ctx context.Context, params *ListDspStreamSubscriptionsParams) (*http.Response, error) {
 	req, err := NewListDspStreamSubscriptionsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDspStreamSubscriptionWithBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDspStreamSubscriptionWithBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateDspStreamSubscriptionRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateDspStreamSubscriptionRequestWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetDspStreamSubscription(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetDspStreamSubscription(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams) (*http.Response, error) {
 	req, err := NewGetDspStreamSubscriptionRequest(c.Server, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDspStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDspStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateDspStreamSubscriptionRequestWithBody(c.Server, subscriptionId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateDspStreamSubscriptionRequestWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(c.Server, subscriptionId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) ListStreamSubscriptions(ctx context.Context, params *ListStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) ListStreamSubscriptions(ctx context.Context, params *ListStreamSubscriptionsParams) (*http.Response, error) {
 	req, err := NewListStreamSubscriptionsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateStreamSubscriptionWithBody(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateStreamSubscriptionWithBody(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateStreamSubscriptionRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateStreamSubscriptionRequestWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetStreamSubscription(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetStreamSubscription(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams) (*http.Response, error) {
 	req, err := NewGetStreamSubscriptionRequest(c.Server, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateStreamSubscriptionWithBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewUpdateStreamSubscriptionRequestWithBody(c.Server, subscriptionId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewUpdateStreamSubscriptionRequestWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(c.Server, subscriptionId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewListDspStreamSubscriptionsRequest generates requests for ListDspStreamSubscriptions
@@ -580,9 +700,11 @@ func NewListDspStreamSubscriptionsRequest(server string, params *ListDspStreamSu
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -596,9 +718,11 @@ func NewListDspStreamSubscriptionsRequest(server string, params *ListDspStreamSu
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -854,9 +978,11 @@ func NewListStreamSubscriptionsRequest(server string, params *ListStreamSubscrip
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -870,9 +996,11 @@ func NewListStreamSubscriptionsRequest(server string, params *ListStreamSubscrip
 				return nil, err
 			} else {
 				for k, v := range parsed {
+					values := make([]string, 0)
 					for _, v2 := range v {
-						queryValues.Add(k, v2)
+						values = append(values, v2)
 					}
+					queryValues.Add(k, strings.Join(values, ","))
 				}
 			}
 
@@ -1098,13 +1226,8 @@ func NewUpdateStreamSubscriptionRequestWithBody(server string, subscriptionId st
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -1112,7 +1235,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -1142,36 +1272,36 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// ListDspStreamSubscriptionsWithResponse request
-	ListDspStreamSubscriptionsWithResponse(ctx context.Context, params *ListDspStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListDspStreamSubscriptionsResp, error)
+	ListDspStreamSubscriptionsWithResponse(ctx context.Context, params *ListDspStreamSubscriptionsParams) (*ListDspStreamSubscriptionsResp, error)
 
 	// CreateDspStreamSubscriptionWithBodyWithResponse request with any body
-	CreateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDspStreamSubscriptionResp, error)
+	CreateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader) (*CreateDspStreamSubscriptionResp, error)
 
-	CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDspStreamSubscriptionResp, error)
+	CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*CreateDspStreamSubscriptionResp, error)
 
 	// GetDspStreamSubscriptionWithResponse request
-	GetDspStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*GetDspStreamSubscriptionResp, error)
+	GetDspStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams) (*GetDspStreamSubscriptionResp, error)
 
 	// UpdateDspStreamSubscriptionWithBodyWithResponse request with any body
-	UpdateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDspStreamSubscriptionResp, error)
+	UpdateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader) (*UpdateDspStreamSubscriptionResp, error)
 
-	UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDspStreamSubscriptionResp, error)
+	UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*UpdateDspStreamSubscriptionResp, error)
 
 	// ListStreamSubscriptionsWithResponse request
-	ListStreamSubscriptionsWithResponse(ctx context.Context, params *ListStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListStreamSubscriptionsResp, error)
+	ListStreamSubscriptionsWithResponse(ctx context.Context, params *ListStreamSubscriptionsParams) (*ListStreamSubscriptionsResp, error)
 
 	// CreateStreamSubscriptionWithBodyWithResponse request with any body
-	CreateStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStreamSubscriptionResp, error)
+	CreateStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader) (*CreateStreamSubscriptionResp, error)
 
-	CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStreamSubscriptionResp, error)
+	CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*CreateStreamSubscriptionResp, error)
 
 	// GetStreamSubscriptionWithResponse request
-	GetStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*GetStreamSubscriptionResp, error)
+	GetStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams) (*GetStreamSubscriptionResp, error)
 
 	// UpdateStreamSubscriptionWithBodyWithResponse request with any body
-	UpdateStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateStreamSubscriptionResp, error)
+	UpdateStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader) (*UpdateStreamSubscriptionResp, error)
 
-	UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateStreamSubscriptionResp, error)
+	UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*UpdateStreamSubscriptionResp, error)
 }
 
 type ListDspStreamSubscriptionsResp struct {
@@ -1395,8 +1525,8 @@ func (r UpdateStreamSubscriptionResp) StatusCode() int {
 }
 
 // ListDspStreamSubscriptionsWithResponse request returning *ListDspStreamSubscriptionsResp
-func (c *ClientWithResponses) ListDspStreamSubscriptionsWithResponse(ctx context.Context, params *ListDspStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListDspStreamSubscriptionsResp, error) {
-	rsp, err := c.ListDspStreamSubscriptions(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListDspStreamSubscriptionsWithResponse(ctx context.Context, params *ListDspStreamSubscriptionsParams) (*ListDspStreamSubscriptionsResp, error) {
+	rsp, err := c.ListDspStreamSubscriptions(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1404,16 +1534,16 @@ func (c *ClientWithResponses) ListDspStreamSubscriptionsWithResponse(ctx context
 }
 
 // CreateDspStreamSubscriptionWithBodyWithResponse request with arbitrary body returning *CreateDspStreamSubscriptionResp
-func (c *ClientWithResponses) CreateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDspStreamSubscriptionResp, error) {
-	rsp, err := c.CreateDspStreamSubscriptionWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, contentType string, body io.Reader) (*CreateDspStreamSubscriptionResp, error) {
+	rsp, err := c.CreateDspStreamSubscriptionWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateDspStreamSubscriptionResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDspStreamSubscriptionResp, error) {
-	rsp, err := c.CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateDspStreamSubscriptionParams, body CreateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*CreateDspStreamSubscriptionResp, error) {
+	rsp, err := c.CreateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1421,8 +1551,8 @@ func (c *ClientWithResponses) CreateDspStreamSubscriptionWithApplicationVndMarke
 }
 
 // GetDspStreamSubscriptionWithResponse request returning *GetDspStreamSubscriptionResp
-func (c *ClientWithResponses) GetDspStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*GetDspStreamSubscriptionResp, error) {
-	rsp, err := c.GetDspStreamSubscription(ctx, subscriptionId, params, reqEditors...)
+func (c *ClientWithResponses) GetDspStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetDspStreamSubscriptionParams) (*GetDspStreamSubscriptionResp, error) {
+	rsp, err := c.GetDspStreamSubscription(ctx, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1430,16 +1560,16 @@ func (c *ClientWithResponses) GetDspStreamSubscriptionWithResponse(ctx context.C
 }
 
 // UpdateDspStreamSubscriptionWithBodyWithResponse request with arbitrary body returning *UpdateDspStreamSubscriptionResp
-func (c *ClientWithResponses) UpdateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateDspStreamSubscriptionResp, error) {
-	rsp, err := c.UpdateDspStreamSubscriptionWithBody(ctx, subscriptionId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDspStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, contentType string, body io.Reader) (*UpdateDspStreamSubscriptionResp, error) {
+	rsp, err := c.UpdateDspStreamSubscriptionWithBody(ctx, subscriptionId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateDspStreamSubscriptionResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateDspStreamSubscriptionResp, error) {
-	rsp, err := c.UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx, subscriptionId, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateDspStreamSubscriptionParams, body UpdateDspStreamSubscriptionApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONRequestBody) (*UpdateDspStreamSubscriptionResp, error) {
+	rsp, err := c.UpdateDspStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsDspStreamSubscriptionResourceV10PlusJSONBody(ctx, subscriptionId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1447,8 +1577,8 @@ func (c *ClientWithResponses) UpdateDspStreamSubscriptionWithApplicationVndMarke
 }
 
 // ListStreamSubscriptionsWithResponse request returning *ListStreamSubscriptionsResp
-func (c *ClientWithResponses) ListStreamSubscriptionsWithResponse(ctx context.Context, params *ListStreamSubscriptionsParams, reqEditors ...RequestEditorFn) (*ListStreamSubscriptionsResp, error) {
-	rsp, err := c.ListStreamSubscriptions(ctx, params, reqEditors...)
+func (c *ClientWithResponses) ListStreamSubscriptionsWithResponse(ctx context.Context, params *ListStreamSubscriptionsParams) (*ListStreamSubscriptionsResp, error) {
+	rsp, err := c.ListStreamSubscriptions(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1456,16 +1586,16 @@ func (c *ClientWithResponses) ListStreamSubscriptionsWithResponse(ctx context.Co
 }
 
 // CreateStreamSubscriptionWithBodyWithResponse request with arbitrary body returning *CreateStreamSubscriptionResp
-func (c *ClientWithResponses) CreateStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateStreamSubscriptionResp, error) {
-	rsp, err := c.CreateStreamSubscriptionWithBody(ctx, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateStreamSubscriptionWithBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, contentType string, body io.Reader) (*CreateStreamSubscriptionResp, error) {
+	rsp, err := c.CreateStreamSubscriptionWithBody(ctx, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateStreamSubscriptionResp(rsp)
 }
 
-func (c *ClientWithResponses) CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateStreamSubscriptionResp, error) {
-	rsp, err := c.CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, params *CreateStreamSubscriptionParams, body CreateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*CreateStreamSubscriptionResp, error) {
+	rsp, err := c.CreateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1473,8 +1603,8 @@ func (c *ClientWithResponses) CreateStreamSubscriptionWithApplicationVndMarketin
 }
 
 // GetStreamSubscriptionWithResponse request returning *GetStreamSubscriptionResp
-func (c *ClientWithResponses) GetStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams, reqEditors ...RequestEditorFn) (*GetStreamSubscriptionResp, error) {
-	rsp, err := c.GetStreamSubscription(ctx, subscriptionId, params, reqEditors...)
+func (c *ClientWithResponses) GetStreamSubscriptionWithResponse(ctx context.Context, subscriptionId string, params *GetStreamSubscriptionParams) (*GetStreamSubscriptionResp, error) {
+	rsp, err := c.GetStreamSubscription(ctx, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1482,16 +1612,16 @@ func (c *ClientWithResponses) GetStreamSubscriptionWithResponse(ctx context.Cont
 }
 
 // UpdateStreamSubscriptionWithBodyWithResponse request with arbitrary body returning *UpdateStreamSubscriptionResp
-func (c *ClientWithResponses) UpdateStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateStreamSubscriptionResp, error) {
-	rsp, err := c.UpdateStreamSubscriptionWithBody(ctx, subscriptionId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateStreamSubscriptionWithBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, contentType string, body io.Reader) (*UpdateStreamSubscriptionResp, error) {
+	rsp, err := c.UpdateStreamSubscriptionWithBody(ctx, subscriptionId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateStreamSubscriptionResp(rsp)
 }
 
-func (c *ClientWithResponses) UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateStreamSubscriptionResp, error) {
-	rsp, err := c.UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx, subscriptionId, params, body, reqEditors...)
+func (c *ClientWithResponses) UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBodyWithResponse(ctx context.Context, subscriptionId string, params *UpdateStreamSubscriptionParams, body UpdateStreamSubscriptionApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONRequestBody) (*UpdateStreamSubscriptionResp, error) {
+	rsp, err := c.UpdateStreamSubscriptionWithApplicationVndMarketingStreamSubscriptionsStreamSubscriptionResourceV10PlusJSONBody(ctx, subscriptionId, params, body)
 	if err != nil {
 		return nil, err
 	}

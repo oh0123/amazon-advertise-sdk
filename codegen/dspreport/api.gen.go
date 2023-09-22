@@ -11,11 +11,12 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	runt "runtime"
 	"strings"
 	"time"
 
-	"github.com/oapi-codegen/runtime"
-	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/deepmap/oapi-codegen/pkg/runtime"
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
 )
 
 // Defines values for CreateReportRequestBodyV3Dimensions.
@@ -233,8 +234,11 @@ type GetCampaignReportV3Params struct {
 // CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody defines body for CreateReportV3 for application/vnd.dspcreatereports.v3+json ContentType.
 type CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody = CreateReportRequestBodyV3
 
-// RequestEditorFn  is the function signature for the RequestEditor callback function
+// RequestEditorFn is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
+
+// ResponseEditorFn is the function signature for the ResponseEditor callback function
+type ResponseEditorFn func(ctx context.Context, rsp *http.Response) error
 
 // Doer performs HTTP requests.
 //
@@ -258,6 +262,13 @@ type Client struct {
 	// A list of callbacks for modifying requests which are generated before sending over
 	// the network.
 	RequestEditors []RequestEditorFn
+
+	// A callback for modifying response which are generated after receive from the network.
+	ResponseEditors []ResponseEditorFn
+
+	// The user agent header identifies your application, its version number, and the platform and programming language you are using.
+	// You must include a user agent header in each request submitted to the sales partner API.
+	UserAgent string
 }
 
 // ClientOption allows setting custom parameters during construction
@@ -283,6 +294,10 @@ func NewClient(server string, opts ...ClientOption) (*Client, error) {
 	if client.Client == nil {
 		client.Client = &http.Client{}
 	}
+	// setting the default useragent
+	if client.UserAgent == "" {
+		client.UserAgent = fmt.Sprintf("selling-partner-api-sdk/v2.0 (Language=%s; Platform=%s-%s)", strings.Replace(runt.Version(), "go", "go/", -1), runt.GOOS, runt.GOARCH)
+	}
 	return &client, nil
 }
 
@@ -304,51 +319,84 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 	}
 }
 
+// WithResponseEditorFn allows setting up a callback function, which will be
+// called right after receive the response.
+func WithResponseEditorFn(fn ResponseEditorFn) ClientOption {
+	return func(c *Client) error {
+		c.ResponseEditors = append(c.ResponseEditors, fn)
+		return nil
+	}
+}
+
 // The interface specification for the client above.
 type ClientInterface interface {
 	// CreateReportV3WithBody request with any body
-	CreateReportV3WithBody(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateReportV3WithBody(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader) (*http.Response, error)
 
-	CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBody(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBody(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody) (*http.Response, error)
 
 	// GetCampaignReportV3 request
-	GetCampaignReportV3(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetCampaignReportV3(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params) (*http.Response, error)
 }
 
-func (c *Client) CreateReportV3WithBody(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateReportV3WithBody(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader) (*http.Response, error) {
 	req, err := NewCreateReportV3RequestWithBody(c.Server, accountId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBody(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBody(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody) (*http.Response, error) {
 	req, err := NewCreateReportV3RequestWithApplicationVndDspcreatereportsV3PlusJSONBody(c.Server, accountId, params, body)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
-func (c *Client) GetCampaignReportV3(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetCampaignReportV3(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params) (*http.Response, error) {
 	req, err := NewGetCampaignReportV3Request(c.Server, accountId, reportId, params)
 	if err != nil {
 		return nil, err
 	}
 	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+	req.Header.Set("User-Agent", c.UserAgent)
+	if err := c.applyReqEditors(ctx, req); err != nil {
 		return nil, err
 	}
-	return c.Client.Do(req)
+	rsp, err := c.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.applyRspEditor(ctx, rsp); err != nil {
+		return nil, err
+	}
+	return rsp, nil
 }
 
 // NewCreateReportV3RequestWithApplicationVndDspcreatereportsV3PlusJSONBody calls the generic CreateReportV3 builder with application/vnd.dspcreatereports.v3+json body
@@ -465,13 +513,8 @@ func NewGetCampaignReportV3Request(server string, accountId string, reportId str
 	return req, nil
 }
 
-func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
+func (c *Client) applyReqEditors(ctx context.Context, req *http.Request) error {
 	for _, r := range c.RequestEditors {
-		if err := r(ctx, req); err != nil {
-			return err
-		}
-	}
-	for _, r := range additionalEditors {
 		if err := r(ctx, req); err != nil {
 			return err
 		}
@@ -479,7 +522,14 @@ func (c *Client) applyEditors(ctx context.Context, req *http.Request, additional
 	return nil
 }
 
-// ClientWithResponses builds on ClientInterface to offer response payloads
+func (c *Client) applyRspEditor(ctx context.Context, rsp *http.Response) error {
+	for _, r := range c.ResponseEditors {
+		if err := r(ctx, rsp); err != nil {
+			return err
+		}
+	}
+	return nil
+} // ClientWithResponses builds on ClientInterface to offer response payloads
 type ClientWithResponses struct {
 	ClientInterface
 }
@@ -509,12 +559,12 @@ func WithBaseURL(baseURL string) ClientOption {
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
 	// CreateReportV3WithBodyWithResponse request with any body
-	CreateReportV3WithBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReportV3Resp, error)
+	CreateReportV3WithBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader) (*CreateReportV3Resp, error)
 
-	CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReportV3Resp, error)
+	CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody) (*CreateReportV3Resp, error)
 
 	// GetCampaignReportV3WithResponse request
-	GetCampaignReportV3WithResponse(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params, reqEditors ...RequestEditorFn) (*GetCampaignReportV3Resp, error)
+	GetCampaignReportV3WithResponse(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params) (*GetCampaignReportV3Resp, error)
 }
 
 type CreateReportV3Resp struct {
@@ -582,16 +632,16 @@ func (r GetCampaignReportV3Resp) StatusCode() int {
 }
 
 // CreateReportV3WithBodyWithResponse request with arbitrary body returning *CreateReportV3Resp
-func (c *ClientWithResponses) CreateReportV3WithBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateReportV3Resp, error) {
-	rsp, err := c.CreateReportV3WithBody(ctx, accountId, params, contentType, body, reqEditors...)
+func (c *ClientWithResponses) CreateReportV3WithBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, contentType string, body io.Reader) (*CreateReportV3Resp, error) {
+	rsp, err := c.CreateReportV3WithBody(ctx, accountId, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
 	return ParseCreateReportV3Resp(rsp)
 }
 
-func (c *ClientWithResponses) CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateReportV3Resp, error) {
-	rsp, err := c.CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBody(ctx, accountId, params, body, reqEditors...)
+func (c *ClientWithResponses) CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBodyWithResponse(ctx context.Context, accountId string, params *CreateReportV3Params, body CreateReportV3ApplicationVndDspcreatereportsV3PlusJSONRequestBody) (*CreateReportV3Resp, error) {
+	rsp, err := c.CreateReportV3WithApplicationVndDspcreatereportsV3PlusJSONBody(ctx, accountId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -599,8 +649,8 @@ func (c *ClientWithResponses) CreateReportV3WithApplicationVndDspcreatereportsV3
 }
 
 // GetCampaignReportV3WithResponse request returning *GetCampaignReportV3Resp
-func (c *ClientWithResponses) GetCampaignReportV3WithResponse(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params, reqEditors ...RequestEditorFn) (*GetCampaignReportV3Resp, error) {
-	rsp, err := c.GetCampaignReportV3(ctx, accountId, reportId, params, reqEditors...)
+func (c *ClientWithResponses) GetCampaignReportV3WithResponse(ctx context.Context, accountId string, reportId string, params *GetCampaignReportV3Params) (*GetCampaignReportV3Resp, error) {
+	rsp, err := c.GetCampaignReportV3(ctx, accountId, reportId, params)
 	if err != nil {
 		return nil, err
 	}
